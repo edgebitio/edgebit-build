@@ -1,0 +1,28 @@
+# action.yml
+name: 'EdgeBit Build'
+description: 'Upload build SBOM and metadata to EdgeBit'
+inputs:
+  edgebit-url:
+    description: 'EdgeBit Organization URL, eg. https://foo.edgebit.io'
+    required: true
+  token:
+    description: 'EdgeBit API token'
+    required: true
+  labels:
+    description: 'Key/value labels to apply to the metadata for organizational purposes, e.g. "foo=bar, fizz=buzz"'
+    required: false
+  repo-token:
+    description: 'GitHub API token used to post comments on pull requests'
+    required: true
+  sbom-file:
+    description: 'Path to the SBOM file to upload'
+    required: false
+outputs:
+  message:
+    description: 'Message about the SBOM uploaded to EdgeBit'
+branding:
+  icon: zap
+  color: blue
+runs:
+  using: "node16"
+  main: "dist/index.js"
