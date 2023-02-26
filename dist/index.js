@@ -91,6 +91,7 @@ async function getInputs() {
     const edgebitSource = 'github';
     const edgebitToken = core.getInput('token', { required: true });
     const repoToken = core.getInput('repo-token', { required: true });
+    const debug = core.getInput('debug', { required: false });
     if (!edgebitUrl) {
         throw new Error('no EdgeBit URL specified, please specify an EdgeBit URL');
     }
@@ -128,6 +129,7 @@ async function getInputs() {
         owner,
         repo,
         sbomPath,
+        debug,
     };
 }
 exports.getInputs = getInputs;
@@ -193,7 +195,7 @@ const issues_1 = __nccwpck_require__(6962);
 const upload_sbom_1 = __nccwpck_require__(6744);
 const run = async () => {
     try {
-        const { edgebitUrl, edgebitLabels, edgebitSource, edgebitToken, repoToken, pullRequestNumber, commitSha, priorSha, owner, repo, sbomPath, } = await (0, config_1.getInputs)();
+        const { edgebitUrl, edgebitLabels, edgebitSource, edgebitToken, repoToken, pullRequestNumber, commitSha, priorSha, owner, repo, sbomPath, debug, } = await (0, config_1.getInputs)();
         const octokit = github.getOctokit(repoToken);
         let issueNumber;
         if (pullRequestNumber) {
@@ -216,7 +218,7 @@ const run = async () => {
             sourceCommitId: commitSha,
         });
         let comment;
-        const message = `<details>
+        const debug_message = `<details>
 <summary>SBOM uploaded with this metadata</summary>
 
 Edgebit URL: ${edgebitUrl}
@@ -240,7 +242,13 @@ Other teams are already using these newly added dependencies:
   - foobar v1.0.0 ([3 teams](${edgebitUrl}/sboms))
   - foobar v2.2.0 ([5 teams](${edgebitUrl}/sboms))
 `;
-        const body = `${message}`;
+        const message = `[View SBOM results](${edgebitUrl}/sboms) for ${commitSha}`;
+        if (debug == 'true') {
+            var body = `${debug_message}`;
+        }
+        else {
+            var body = `${message}`;
+        }
         comment = await (0, comments_1.createComment)(octokit, owner, repo, issueNumber, body);
         core.setOutput('comment-created', 'true');
         if (comment) {

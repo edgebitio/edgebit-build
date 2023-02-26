@@ -22,6 +22,7 @@ const run = async (): Promise<void> => {
       owner,
       repo,
       sbomPath,
+      debug,
     } = await getInputs()
 
     const octokit = github.getOctokit(repoToken)
@@ -53,7 +54,8 @@ const run = async (): Promise<void> => {
 
     let comment: CreateIssueCommentResponseData | null | undefined
 
-    const message = `<details>
+
+    const debug_message = `<details>
 <summary>SBOM uploaded with this metadata</summary>
 
 Edgebit URL: ${edgebitUrl}
@@ -78,7 +80,13 @@ Other teams are already using these newly added dependencies:
   - foobar v2.2.0 ([5 teams](${edgebitUrl}/sboms))
 `
 
-    const body = `${message}`
+    const message = `[View SBOM results](${edgebitUrl}/sboms) for ${commitSha}`
+
+    if (debug == 'true') {
+      var body = `${debug_message}`
+    } else {
+      var body = `${message}`
+    }
 
     comment = await createComment(octokit, owner, repo, issueNumber, body)
     core.setOutput('comment-created', 'true')

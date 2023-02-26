@@ -14,6 +14,7 @@ interface Inputs {
   repo: string
   owner: string
   sbomPath: string
+  debug: string
 }
 
 export async function getInputs(): Promise<Inputs> {
@@ -22,6 +23,7 @@ export async function getInputs(): Promise<Inputs> {
   const edgebitSource = 'github';
   const edgebitToken = core.getInput('token', { required: true });
   const repoToken = core.getInput('repo-token', { required: true });
+  const debug = core.getInput('debug', { required: false });
 
   if (!edgebitUrl) {
     throw new Error('no EdgeBit URL specified, please specify an EdgeBit URL');
@@ -67,5 +69,6 @@ export async function getInputs(): Promise<Inputs> {
     owner,
     repo,
     sbomPath,
+    debug,
   }
 }
