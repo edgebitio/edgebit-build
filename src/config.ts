@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {PushEvent, PullRequestOpenedEvent} from '@octokit/webhooks-definitions/schema'
+import { PushEvent, PullRequestOpenedEvent } from '@octokit/webhooks-definitions/schema'
 
 interface Inputs {
   edgebitUrl: string
@@ -14,25 +14,24 @@ interface Inputs {
   repo: string
   owner: string
   sbomPath: string
-  debug: string
 }
 
 export async function getInputs(): Promise<Inputs> {
-  const edgebitUrl = core.getInput('edgebit-url', { required: true });
-  const edgebitLabels = core.getInput('labels', { required: false });
-  const edgebitSource = 'github';
-  const edgebitToken = core.getInput('token', { required: true });
-  const repoToken = core.getInput('repo-token', { required: true });
-  const debug = core.getInput('debug', { required: false });
+  const edgebitUrl = core.getInput('edgebit-url', { required: true })
+  const edgebitLabels = core.getInput('labels', { required: false })
+  const edgebitSource = 'github'
+  const edgebitToken = core.getInput('token', { required: true })
+  const repoToken = core.getInput('repo-token', { required: true })
 
   if (!edgebitUrl) {
-    throw new Error('no EdgeBit URL specified, please specify an EdgeBit URL');
+    throw new Error('no EdgeBit URL specified, please specify an EdgeBit URL')
   }
 
-  const sbomPath = core.getInput('sbom-file', { required: false }) || process.env.ANCHORE_SBOM_ACTION_SBOM_FILE;
+  const sbomPath =
+    core.getInput('sbom-file', { required: false }) || process.env.ANCHORE_SBOM_ACTION_SBOM_FILE
 
   if (!sbomPath) {
-    throw new Error('no SBOM file specified, please specify an SBOM file');
+    throw new Error('no SBOM file specified, please specify an SBOM file')
   }
 
   const { payload } = github.context
@@ -43,16 +42,16 @@ export async function getInputs(): Promise<Inputs> {
     throw new Error('unable to determine repository from request type')
   }
 
-  var baseCommit = ''
-  var headCommit = ''
+  let baseCommit = ''
+  let headCommit = ''
   if (github.context.eventName === 'pull_request') {
     const pullRequestPayload = github.context.payload as PullRequestOpenedEvent
-    baseCommit = pullRequestPayload.pull_request.base.sha;
-    headCommit = pullRequestPayload.pull_request.head.sha;
+    baseCommit = pullRequestPayload.pull_request.base.sha
+    headCommit = pullRequestPayload.pull_request.head.sha
   } else if (github.context.eventName === 'push') {
     const pushPayload = github.context.payload as PushEvent
-    baseCommit = pushPayload.before;
-    headCommit = github.context.sha;
+    baseCommit = pushPayload.before
+    headCommit = github.context.sha
   }
 
   const [owner, repo] = repoFullName.split('/')
@@ -69,6 +68,5 @@ export async function getInputs(): Promise<Inputs> {
     owner,
     repo,
     sbomPath,
-    debug,
   }
 }
