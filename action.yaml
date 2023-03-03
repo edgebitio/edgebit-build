@@ -17,10 +17,6 @@ inputs:
   sbom-file:
     description: 'Path to the SBOM file to upload'
     required: false
-  debug:
-    description: 'Output debug information when the bot comments'
-    required: false
-    default: false
 outputs:
   message:
     description: 'Message about the SBOM uploaded to EdgeBit'

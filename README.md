@@ -10,15 +10,14 @@ Less noise equals less frustration between security and engineering teams. And f
 
 | Input Name | Description | Value |
 |------------|-------------|-------|
-| `edgebit-url` | EdgeBit organization url | Required, `https://foo.edgebit.io` |
+| `organization` | EdgeBit organization name, eg `foo` from https://foo.edgebit.io | Required |
 | `token` | EdgeBit access token | Required |
 | `labels` | Key/value labels to apply to the metadata for organizational purposes | Optional, `"foo=bar, fizz=buzz"` |
 | `repo-token` | GitHub API token used to post comments on pull requests | Required, `${{ secrets.GITHUB_TOKEN }}` |
-| `sbom-file` | Location of the SBOM on disk | Required, `/tmp/sbom.syft.json` |
 
 ## Example Usage with Container
 
-This action contains two jobs: the first builds a container and the second builds the SBOM and pushes it to EdgeBit. The second job consumes an output variable of the build container name.
+To trigger this job after your container is built, replace `Build Container` with the job name.
 
 ```yaml
 name: EdgeBit
@@ -29,38 +28,20 @@ on:
       - '*'
   pull_request:
     types: [opened, reopened]
+  workflow_run:
+    workflows: ["Build Container"]
+    types:
+      - completed
 
 permissions:
   id-token: write
   contents: read
   pull-requests: write
 
-env:
-  CONTAINER_IMAGE: registry.example.com/foo:latest
-
 jobs:
-  build-container:
-    runs-on: ubuntu-latest
-    outputs:
-      container_image: ${{ env.CONTAINER_IMAGE }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Build and push
-        uses: docker/build-push-action@v4
-        
-        with:
-          context: .
-          tags: ${{ env.CONTAINER_IMAGE }}
-
   upload-sbom:
 
     runs-on: ubuntu-latest
-
-    # ensure the SBOM is genearted after your container is built
-    needs: build-container
 
     # to prevent duplication on a push & PR in quick succession: 
     # 1. if the push is the first commit on a branch
@@ -79,19 +60,16 @@ jobs:
         uses: anchore/sbom-action@v0
         with:
           # generate for the container built above
-          image: ${{needs.build-container.outputs.container_image}}
-          artifact-name: sbom.syft.json
-          output-file: /tmp/sbom.syft.json
-          format: syft-json
+          image: registry.example.com/example/image_name:tag
+          artifact-name: sbom.spdx
 
       - name: Upload SBOM to EdgeBit
         uses: edgebitio/edgebit-build@main
         with:
-          edgebit-url: https://foo.edgebit.io
+          organization: foo
           token: ${{ secrets.EDGEBIT_TOKEN }}
           labels: 'foo=bar, fizz=buzz'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          sbom-file: /tmp/sbom.syft.json
 ```
 
 ## Example Usage with Local Code
@@ -127,16 +105,13 @@ jobs:
         with:
           # generate for the current directory
           path: .
-          artifact-name: sbom.syft.json
-          output-file: /tmp/sbom.syft.json
-          format: syft-json
+          artifact-name: sbom.spdx
 
       - name: Upload SBOM to EdgeBit
         uses: edgebitio/edgebit-build@main
         with:
-          edgebit-url: https://foo.edgebit.io
+          organization: foo
           token: ${{ secrets.EDGEBIT_ACCESS_TOKEN }}
           labels: 'foo=bar, fizz=buzz'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          sbom-file: /tmp/sbom.syft.json
 ```

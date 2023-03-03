@@ -91,7 +91,6 @@ async function getInputs() {
     const edgebitSource = 'github';
     const edgebitToken = core.getInput('token', { required: true });
     const repoToken = core.getInput('repo-token', { required: true });
-    const debug = core.getInput('debug', { required: false });
     if (!edgebitUrl) {
         throw new Error('no EdgeBit URL specified, please specify an EdgeBit URL');
     }
@@ -104,8 +103,8 @@ async function getInputs() {
     if (!repoFullName) {
         throw new Error('unable to determine repository from request type');
     }
-    var baseCommit = '';
-    var headCommit = '';
+    let baseCommit = '';
+    let headCommit = '';
     if (github.context.eventName === 'pull_request') {
         const pullRequestPayload = github.context.payload;
         baseCommit = pullRequestPayload.pull_request.base.sha;
@@ -129,7 +128,6 @@ async function getInputs() {
         owner,
         repo,
         sbomPath,
-        debug,
     };
 }
 exports.getInputs = getInputs;
@@ -195,7 +193,7 @@ const issues_1 = __nccwpck_require__(6962);
 const upload_sbom_1 = __nccwpck_require__(6744);
 const run = async () => {
     try {
-        const { edgebitUrl, edgebitLabels, edgebitSource, edgebitToken, repoToken, pullRequestNumber, commitSha, priorSha, owner, repo, sbomPath, debug, } = await (0, config_1.getInputs)();
+        const { edgebitUrl, edgebitToken, repoToken, pullRequestNumber, commitSha, priorSha, owner, repo, sbomPath, } = await (0, config_1.getInputs)();
         const octokit = github.getOctokit(repoToken);
         let issueNumber;
         if (pullRequestNumber) {
@@ -210,48 +208,17 @@ const run = async () => {
             core.setOutput('comment-created', 'false');
             return;
         }
-        (0, upload_sbom_1.uploadSBOM)({
+        const result = await (0, upload_sbom_1.uploadSBOM)({
             edgebitUrl: edgebitUrl,
             edgebitToken: edgebitToken,
             sbomPath: sbomPath,
             sourceRepoUrl: `https://github.com/${owner}/${repo}`,
             sourceCommitId: commitSha,
+            baseCommitId: priorSha,
         });
-        let comment;
-        const debug_message = `<details>
-<summary>SBOM uploaded with this metadata</summary>
-
-Edgebit URL: ${edgebitUrl}
-EdgeBit labels: ${edgebitLabels}
-EdgeBit source: ${edgebitSource}
-EdgeBit build identifier: ${owner}/${repo}:${commitSha}
-EdgeBit compare identier: ${owner}/${repo}:${priorSha}
-SBOM location: ${sbomPath}
-
-I would attempt to retrieve a diff message with:
-
-    ${edgebitUrl}/sboms/diff?prior=${owner}/${repo}:${commitSha}&current=${owner}/${repo}:${priorSha}
-
-</details>
-
-New dependencies have 3 vulnerabilities ([view report](${edgebitUrl}/sboms)):
-  - foobar - Critical - recommend version v1.1.1
-  - fizzbuzz - High - recommend version v2.2.2
-
-Other teams are already using these newly added dependencies:
-  - foobar v1.0.0 ([3 teams](${edgebitUrl}/sboms))
-  - foobar v2.2.0 ([5 teams](${edgebitUrl}/sboms))
-`;
-        const message = `[View SBOM results](${edgebitUrl}/sboms) for ${commitSha}`;
-        if (debug == 'true') {
-            var body = `${debug_message}`;
-        }
-        else {
-            var body = `${message}`;
-        }
-        comment = await (0, comments_1.createComment)(octokit, owner, repo, issueNumber, body);
-        core.setOutput('comment-created', 'true');
+        const comment = await (0, comments_1.createComment)(octokit, owner, repo, issueNumber, result.commentBody);
         if (comment) {
+            core.setOutput('comment-created', 'true');
             core.setOutput('comment-id', comment.id);
         }
         else {
@@ -306,35 +273,40 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getCLI = exports.uploadSBOM = void 0;
 const exec = __importStar(__nccwpck_require__(1514));
 const tc = __importStar(__nccwpck_require__(7784));
-const ebctlVersion = "v0.0.3";
+const ebctlVersion = 'v0.4.0';
 async function uploadSBOM(params) {
     const ebctl = await getCLI();
-    let args = ["upload-sbom"];
+    const args = ['upload-sbom-for-ci'];
     if (params.imageID) {
-        args.push("--image-id", params.imageID);
+        args.push('--image-id', params.imageID);
     }
     if (params.imageTag) {
-        args.push("--image-tag", params.imageTag);
+        args.push('--image-tag', params.imageTag);
     }
-    if (params.sourceRepoUrl) {
-        args.push("--repo", params.sourceRepoUrl);
-    }
-    if (params.sourceCommitId) {
-        args.push("--commit", params.sourceCommitId);
+    args.push('--repo', params.sourceRepoUrl);
+    args.push('--commit', params.sourceCommitId);
+    if (params.baseCommitId) {
+        args.push('--base-commit', params.baseCommitId);
     }
     args.push(params.sbomPath);
-    await exec.exec(ebctl, args, {
+    const output = await exec.getExecOutput(ebctl, args, {
         env: {
             EDGEBIT_URL: params.edgebitUrl,
             EDGEBIT_API_KEY: params.edgebitToken,
-        }
+        },
     });
+    if (output.exitCode !== 0) {
+        throw new Error(`Failed to upload SBOM: ${output.stderr}`);
+    }
+    const outputObj = JSON.parse(output.stdout);
+    return {
+        commentBody: outputObj['comment_body'],
+    };
 }
 exports.uploadSBOM = uploadSBOM;
 async function getCLI() {
-    const archVal = (process.arch === 'x64') ? 'x86_64' : 'arm64';
+    const archVal = process.arch === 'x64' ? 'x86_64' : 'arm64';
     const toolURL = `https://github.com/edgebitio/edgebit-cli/releases/download/${ebctlVersion}/edgebit-cli_Linux_${archVal}.tar.gz`;
-    console.log(`Downloading ${toolURL}...`);
     const downloaded = await tc.downloadTool(toolURL);
     const extracted = await tc.extractTar(downloaded);
     return `${extracted}/ebctl`;
