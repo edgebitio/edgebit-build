@@ -91,6 +91,8 @@ async function getInputs() {
     const edgebitSource = 'github';
     const edgebitToken = core.getInput('token', { required: true });
     const repoToken = core.getInput('repo-token', { required: true });
+    const imageId = core.getInput('image-id', { required: false }) || undefined;
+    const imageTag = core.getInput('image-tag', { required: false }) || undefined;
     if (!edgebitUrl) {
         throw new Error('no EdgeBit URL specified, please specify an EdgeBit URL');
     }
@@ -131,6 +133,8 @@ async function getInputs() {
         owner,
         repo,
         sbomPath,
+        imageId,
+        imageTag,
     };
 }
 exports.getInputs = getInputs;
@@ -202,7 +206,7 @@ const issues_1 = __nccwpck_require__(6962);
 const upload_sbom_1 = __nccwpck_require__(6744);
 const run = async () => {
     try {
-        const { edgebitUrl, edgebitToken, repoToken, pullRequestNumber, commitSha, priorSha, owner, repo, sbomPath, } = await (0, config_1.getInputs)();
+        const { edgebitUrl, edgebitToken, repoToken, pullRequestNumber, commitSha, priorSha, owner, repo, sbomPath, imageId, imageTag, } = await (0, config_1.getInputs)();
         const octokit = github.getOctokit(repoToken);
         let baseSha = priorSha;
         let issueNumber;
@@ -233,6 +237,8 @@ const run = async () => {
             sourceRepoUrl: `https://github.com/${owner}/${repo}`,
             sourceCommitId: commitSha,
             baseCommitId: baseSha,
+            imageId,
+            imageTag,
         });
         if (!issueNumber) {
             core.info('no issue number found, skipping comment creation. This is expected if this is not a pull request.');
@@ -300,8 +306,8 @@ const ebctlVersion = 'v0.4.0';
 async function uploadSBOM(params) {
     const ebctl = await getCLI();
     const args = ['upload-sbom-for-ci'];
-    if (params.imageID) {
-        args.push('--image-id', params.imageID);
+    if (params.imageId) {
+        args.push('--image-id', params.imageId);
     }
     if (params.imageTag) {
         args.push('--image-tag', params.imageTag);
