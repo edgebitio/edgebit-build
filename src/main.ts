@@ -2,7 +2,7 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { createComment } from './comments'
 import { getInputs } from './config'
-import { getIssueNumberFromCommitPullsList } from './issues'
+import { findPRForCommit } from './issues'
 import { uploadSBOM } from './upload_sbom'
 
 const run = async (): Promise<void> => {
@@ -21,14 +21,29 @@ const run = async (): Promise<void> => {
 
     const octokit = github.getOctokit(repoToken)
 
-    let issueNumber
+    let baseSha = priorSha
+    let issueNumber: number | undefined
 
     if (pullRequestNumber) {
+      core.info(`pull request number specified: ${pullRequestNumber}`)
       issueNumber = pullRequestNumber
     } else {
-      // If this is not a pull request, attempt to find a PR matching the sha
-      issueNumber = await getIssueNumberFromCommitPullsList(octokit, owner, repo, commitSha)
+      core.info(`attempting to locate PR for commit ${commitSha}...`)
+      const pr = await findPRForCommit(octokit, owner, repo, commitSha)
+
+      if (pr) {
+        core.info(`found PR #${pr.number} for commit ${commitSha}`)
+        issueNumber = pr.number
+        baseSha = priorSha || pr.head
+      } else {
+        core.info(`no PR found for commit ${commitSha}`)
+      }
     }
+
+    core.info(`uploading SBOM for:`)
+    core.info(`  repo: https://github.com/${owner}/${repo}`)
+    core.info(`  commit: ${commitSha}`)
+    core.info(`  base commit: ${baseSha}`)
 
     const result = await uploadSBOM({
       edgebitUrl: edgebitUrl,
@@ -36,7 +51,7 @@ const run = async (): Promise<void> => {
       sbomPath: sbomPath,
       sourceRepoUrl: `https://github.com/${owner}/${repo}`,
       sourceCommitId: commitSha,
-      baseCommitId: priorSha,
+      baseCommitId: baseSha,
     })
 
     if (!issueNumber) {

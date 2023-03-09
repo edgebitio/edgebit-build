@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { PushEvent, PullRequestOpenedEvent } from '@octokit/webhooks-definitions/schema'
+import { PullRequestOpenedEvent } from '@octokit/webhooks-definitions/schema'
 
 interface Inputs {
   edgebitUrl: string
@@ -9,7 +9,7 @@ interface Inputs {
   edgebitToken: string
   repoToken: string
   commitSha: string
-  priorSha: any
+  priorSha: string | undefined
   pullRequestNumber?: number
   repo: string
   owner: string
@@ -42,16 +42,22 @@ export async function getInputs(): Promise<Inputs> {
     throw new Error('unable to determine repository from request type')
   }
 
-  let baseCommit = ''
-  let headCommit = ''
+  let baseCommit = undefined
+  let pullRequestNumber = undefined
+  const headCommit = github.context.sha
+
   if (github.context.eventName === 'pull_request') {
-    const pullRequestPayload = github.context.payload as PullRequestOpenedEvent
+    const pullRequestPayload = github.context.payload.pu as PullRequestOpenedEvent
+
     baseCommit = pullRequestPayload.pull_request.base.sha
-    headCommit = pullRequestPayload.pull_request.head.sha
-  } else if (github.context.eventName === 'push') {
-    const pushPayload = github.context.payload as PushEvent
-    baseCommit = pushPayload.before
-    headCommit = github.context.sha
+    pullRequestNumber = pullRequestPayload.number
+
+    core.info(`pull request event:`)
+    core.info(`  PR #${pullRequestPayload.number}`)
+    core.info(`  base commit: ${baseCommit}`)
+  } else if (github.context.issue.number) {
+    core.info(`not a pull request event, but got issue number: ${github.context.issue.number}`)
+    pullRequestNumber = github.context.issue.number
   }
 
   const [owner, repo] = repoFullName.split('/')
@@ -62,7 +68,7 @@ export async function getInputs(): Promise<Inputs> {
     edgebitSource,
     edgebitToken,
     repoToken,
-    pullRequestNumber: payload.pull_request?.number,
+    pullRequestNumber: pullRequestNumber,
     commitSha: headCommit,
     priorSha: baseCommit,
     owner,
