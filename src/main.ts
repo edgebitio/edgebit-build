@@ -30,14 +30,6 @@ const run = async (): Promise<void> => {
       issueNumber = await getIssueNumberFromCommitPullsList(octokit, owner, repo, commitSha)
     }
 
-    if (!issueNumber) {
-      core.info(
-        'no issue number found, use a pull_request event, a pull event, or provide an issue input',
-      )
-      core.setOutput('comment-created', 'false')
-      return
-    }
-
     const result = await uploadSBOM({
       edgebitUrl: edgebitUrl,
       edgebitToken: edgebitToken,
@@ -46,6 +38,14 @@ const run = async (): Promise<void> => {
       sourceCommitId: commitSha,
       baseCommitId: priorSha,
     })
+
+    if (!issueNumber) {
+      core.info(
+        'no issue number found, skipping comment creation. This is expected if this is not a pull request.',
+      )
+      core.setOutput('comment-created', 'false')
+      return
+    }
 
     const comment = await createComment(octokit, owner, repo, issueNumber, result.commentBody)
 
