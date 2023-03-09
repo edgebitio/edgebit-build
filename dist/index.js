@@ -85,7 +85,7 @@ exports.getInputs = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 async function getInputs() {
-    var _a, _b;
+    var _a;
     const edgebitUrl = core.getInput('edgebit-url', { required: true });
     const edgebitLabels = core.getInput('labels', { required: false });
     const edgebitSource = 'github';
@@ -103,17 +103,20 @@ async function getInputs() {
     if (!repoFullName) {
         throw new Error('unable to determine repository from request type');
     }
-    let baseCommit = '';
-    let headCommit = '';
+    let baseCommit = undefined;
+    let pullRequestNumber = undefined;
+    const headCommit = github.context.sha;
     if (github.context.eventName === 'pull_request') {
-        const pullRequestPayload = github.context.payload;
+        const pullRequestPayload = github.context.payload.pu;
         baseCommit = pullRequestPayload.pull_request.base.sha;
-        headCommit = pullRequestPayload.pull_request.head.sha;
+        pullRequestNumber = pullRequestPayload.number;
+        core.info(`pull request event:`);
+        core.info(`  PR #${pullRequestPayload.number}`);
+        core.info(`  base commit: ${baseCommit}`);
     }
-    else if (github.context.eventName === 'push') {
-        const pushPayload = github.context.payload;
-        baseCommit = pushPayload.before;
-        headCommit = github.context.sha;
+    else if (github.context.issue.number) {
+        core.info(`not a pull request event, but got issue number: ${github.context.issue.number}`);
+        pullRequestNumber = github.context.issue.number;
     }
     const [owner, repo] = repoFullName.split('/');
     return {
@@ -122,7 +125,7 @@ async function getInputs() {
         edgebitSource,
         edgebitToken,
         repoToken,
-        pullRequestNumber: (_b = payload.pull_request) === null || _b === void 0 ? void 0 : _b.number,
+        pullRequestNumber: pullRequestNumber,
         commitSha: headCommit,
         priorSha: baseCommit,
         owner,
@@ -141,17 +144,23 @@ exports.getInputs = getInputs;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getIssueNumberFromCommitPullsList = void 0;
-async function getIssueNumberFromCommitPullsList(octokit, owner, repo, commitSha) {
-    var _a;
+exports.findPRForCommit = void 0;
+async function findPRForCommit(octokit, owner, repo, commitSha) {
     const commitPullsList = await octokit.rest.repos.listPullRequestsAssociatedWithCommit({
         owner,
         repo,
         commit_sha: commitSha,
     });
-    return commitPullsList.data.length ? (_a = commitPullsList.data) === null || _a === void 0 ? void 0 : _a[0].number : null;
+    const prs = commitPullsList.data.filter((pr) => pr.state === 'open');
+    if (prs.length === 0) {
+        return null;
+    }
+    return {
+        number: prs[0].number,
+        head: prs[0].head.sha,
+    };
 }
-exports.getIssueNumberFromCommitPullsList = getIssueNumberFromCommitPullsList;
+exports.findPRForCommit = findPRForCommit;
 
 
 /***/ }),
@@ -195,21 +204,35 @@ const run = async () => {
     try {
         const { edgebitUrl, edgebitToken, repoToken, pullRequestNumber, commitSha, priorSha, owner, repo, sbomPath, } = await (0, config_1.getInputs)();
         const octokit = github.getOctokit(repoToken);
+        let baseSha = priorSha;
         let issueNumber;
         if (pullRequestNumber) {
+            core.info(`pull request number specified: ${pullRequestNumber}`);
             issueNumber = pullRequestNumber;
         }
         else {
-            // If this is not a pull request, attempt to find a PR matching the sha
-            issueNumber = await (0, issues_1.getIssueNumberFromCommitPullsList)(octokit, owner, repo, commitSha);
+            core.info(`attempting to locate PR for commit ${commitSha}...`);
+            const pr = await (0, issues_1.findPRForCommit)(octokit, owner, repo, commitSha);
+            if (pr) {
+                core.info(`found PR #${pr.number} for commit ${commitSha}`);
+                issueNumber = pr.number;
+                baseSha = priorSha || pr.head;
+            }
+            else {
+                core.info(`no PR found for commit ${commitSha}`);
+            }
         }
+        core.info(`uploading SBOM for:`);
+        core.info(`  repo: https://github.com/${owner}/${repo}`);
+        core.info(`  commit: ${commitSha}`);
+        core.info(`  base commit: ${baseSha}`);
         const result = await (0, upload_sbom_1.uploadSBOM)({
             edgebitUrl: edgebitUrl,
             edgebitToken: edgebitToken,
             sbomPath: sbomPath,
             sourceRepoUrl: `https://github.com/${owner}/${repo}`,
             sourceCommitId: commitSha,
-            baseCommitId: priorSha,
+            baseCommitId: baseSha,
         });
         if (!issueNumber) {
             core.info('no issue number found, skipping comment creation. This is expected if this is not a pull request.');
