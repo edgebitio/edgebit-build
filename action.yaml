@@ -20,7 +20,8 @@ inputs:
   image-id:
     description: 'Docker-style image ID to associate with the SBOM (eg "sha256:c2ccf1a246a929e80af584c541944452a3c7e1d013e4abac452cd571e630176a")'
     required: false
-  image-tag: 'Docker-style image tag to associate with the SBOM (eg "foo/bar:latest")'
+  image-tag:
+    description: 'Docker-style image tag to associate with the SBOM (eg "foo/bar:latest")'
     required: false
 outputs:
   message:
