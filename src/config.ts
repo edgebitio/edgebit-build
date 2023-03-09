@@ -14,6 +14,8 @@ interface Inputs {
   repo: string
   owner: string
   sbomPath: string
+  imageId: string | undefined
+  imageTag: string | undefined
 }
 
 export async function getInputs(): Promise<Inputs> {
@@ -22,6 +24,8 @@ export async function getInputs(): Promise<Inputs> {
   const edgebitSource = 'github'
   const edgebitToken = core.getInput('token', { required: true })
   const repoToken = core.getInput('repo-token', { required: true })
+  const imageId = core.getInput('image-id', { required: false }) || undefined
+  const imageTag = core.getInput('image-tag', { required: false }) || undefined
 
   if (!edgebitUrl) {
     throw new Error('no EdgeBit URL specified, please specify an EdgeBit URL')
@@ -74,5 +78,7 @@ export async function getInputs(): Promise<Inputs> {
     owner,
     repo,
     sbomPath,
+    imageId,
+    imageTag,
   }
 }

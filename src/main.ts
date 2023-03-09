@@ -17,6 +17,8 @@ const run = async (): Promise<void> => {
       owner,
       repo,
       sbomPath,
+      imageId,
+      imageTag,
     } = await getInputs()
 
     const octokit = github.getOctokit(repoToken)
@@ -52,6 +54,8 @@ const run = async (): Promise<void> => {
       sourceRepoUrl: `https://github.com/${owner}/${repo}`,
       sourceCommitId: commitSha,
       baseCommitId: baseSha,
+      imageId,
+      imageTag,
     })
 
     if (!issueNumber) {

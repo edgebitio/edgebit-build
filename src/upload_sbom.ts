@@ -7,7 +7,7 @@ export type UploadSBOMParams = {
   sbomPath: string
   edgebitUrl: string
   edgebitToken: string
-  imageID?: string
+  imageId?: string
   imageTag?: string
   sourceRepoUrl: string
   sourceCommitId: string
@@ -23,8 +23,8 @@ export async function uploadSBOM(params: UploadSBOMParams): Promise<UploadSBOMRe
 
   const args = ['upload-sbom-for-ci']
 
-  if (params.imageID) {
-    args.push('--image-id', params.imageID)
+  if (params.imageId) {
+    args.push('--image-id', params.imageId)
   }
 
   if (params.imageTag) {
