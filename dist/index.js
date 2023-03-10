@@ -161,7 +161,7 @@ async function findPRForCommit(octokit, owner, repo, commitSha) {
     }
     return {
         number: prs[0].number,
-        head: prs[0].head.sha,
+        base: prs[0].base.sha,
     };
 }
 exports.findPRForCommit = findPRForCommit;
@@ -220,7 +220,7 @@ const run = async () => {
             if (pr) {
                 core.info(`found PR #${pr.number} for commit ${commitSha}`);
                 issueNumber = pr.number;
-                baseSha = priorSha || pr.head;
+                baseSha = priorSha || pr.base;
             }
             else {
                 core.info(`no PR found for commit ${commitSha}`);

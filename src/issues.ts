@@ -5,7 +5,7 @@ export async function findPRForCommit(
   owner: string,
   repo: string,
   commitSha: string,
-): Promise<{ number: number; head: string } | null> {
+): Promise<{ number: number; base: string } | null> {
   const commitPullsList = await octokit.rest.repos.listPullRequestsAssociatedWithCommit({
     owner,
     repo,
@@ -20,6 +20,6 @@ export async function findPRForCommit(
 
   return {
     number: prs[0].number,
-    head: prs[0].head.sha,
+    base: prs[0].base.sha,
   }
 }
