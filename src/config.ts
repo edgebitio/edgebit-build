@@ -51,7 +51,7 @@ export async function getInputs(): Promise<Inputs> {
   const headCommit = github.context.sha
 
   if (github.context.eventName === 'pull_request') {
-    const pullRequestPayload = github.context.payload.pu as PullRequestOpenedEvent
+    const pullRequestPayload = github.context.payload as PullRequestOpenedEvent
 
     baseCommit = pullRequestPayload.pull_request.base.sha
     pullRequestNumber = pullRequestPayload.number

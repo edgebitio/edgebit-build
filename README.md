@@ -115,3 +115,7 @@ jobs:
           labels: 'foo=bar, fizz=buzz'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+## Building a Release
+
+After making changes, run `npm run build && npm run package` in your pull request.
