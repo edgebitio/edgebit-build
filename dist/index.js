@@ -109,7 +109,7 @@ async function getInputs() {
     let pullRequestNumber = undefined;
     const headCommit = github.context.sha;
     if (github.context.eventName === 'pull_request') {
-        const pullRequestPayload = github.context.payload.pu;
+        const pullRequestPayload = github.context.payload;
         baseCommit = pullRequestPayload.pull_request.base.sha;
         pullRequestNumber = pullRequestPayload.number;
         core.info(`pull request event:`);
