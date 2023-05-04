@@ -308,7 +308,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getCLI = exports.uploadSBOM = void 0;
 const exec = __importStar(__nccwpck_require__(1514));
 const tc = __importStar(__nccwpck_require__(7784));
-const ebctlVersion = 'v0.4.0';
+const ebctlVersion = 'v0.5.0';
 async function uploadSBOM(params) {
     const ebctl = await getCLI();
     const args = ['upload-sbom-for-ci'];
