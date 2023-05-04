@@ -93,6 +93,8 @@ async function getInputs() {
     const repoToken = core.getInput('repo-token', { required: true });
     const imageId = core.getInput('image-id', { required: false }) || undefined;
     const imageTag = core.getInput('image-tag', { required: false }) || undefined;
+    const componentName = core.getInput('component', { required: false }) || undefined;
+    const tags = core.getInput('tags', { required: false }) || undefined;
     if (!edgebitUrl) {
         throw new Error('no EdgeBit URL specified, please specify an EdgeBit URL');
     }
@@ -135,6 +137,8 @@ async function getInputs() {
         sbomPath,
         imageId,
         imageTag,
+        componentName,
+        tags,
     };
 }
 exports.getInputs = getInputs;
@@ -206,7 +210,7 @@ const issues_1 = __nccwpck_require__(6962);
 const upload_sbom_1 = __nccwpck_require__(6744);
 const run = async () => {
     try {
-        const { edgebitUrl, edgebitToken, repoToken, pullRequestNumber, commitSha, priorSha, owner, repo, sbomPath, imageId, imageTag, } = await (0, config_1.getInputs)();
+        const { edgebitUrl, edgebitToken, repoToken, pullRequestNumber, commitSha, priorSha, owner, repo, sbomPath, imageId, imageTag, componentName, tags, } = await (0, config_1.getInputs)();
         const octokit = github.getOctokit(repoToken);
         let baseSha = priorSha;
         let issueNumber;
@@ -239,6 +243,8 @@ const run = async () => {
             baseCommitId: baseSha,
             imageId,
             imageTag,
+            componentName,
+            tags,
         });
         if (!issueNumber) {
             core.info('no issue number found, skipping comment creation. This is expected if this is not a pull request.');
@@ -311,6 +317,12 @@ async function uploadSBOM(params) {
     }
     if (params.imageTag) {
         args.push('--image-tag', params.imageTag);
+    }
+    if (params.componentName) {
+        args.push('--component', params.componentName);
+    }
+    if (params.tags) {
+        args.push('--tag', params.tags);
     }
     args.push('--repo', params.sourceRepoUrl);
     args.push('--commit', params.sourceCommitId);
