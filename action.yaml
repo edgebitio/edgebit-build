@@ -23,6 +23,12 @@ inputs:
   image-tag:
     description: 'Docker-style image tag to associate with the SBOM (eg "foo/bar:latest")'
     required: false
+  component:
+    description: 'EdgeBit Component name to associate the SBOM with'
+    required: false
+  tags:
+    description: 'Comma-separated list of Component tags to apply to the SBOM'
+    required: false
 outputs:
   message:
     description: 'Message about the SBOM uploaded to EdgeBit'
