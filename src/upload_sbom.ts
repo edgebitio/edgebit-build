@@ -1,7 +1,7 @@
 import * as exec from '@actions/exec'
 import * as tc from '@actions/tool-cache'
 
-const ebctlVersion = 'v0.4.0'
+const ebctlVersion = 'v0.5.0'
 
 export type UploadSBOMParams = {
   sbomPath: string
