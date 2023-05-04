@@ -19,6 +19,8 @@ const run = async (): Promise<void> => {
       sbomPath,
       imageId,
       imageTag,
+      componentName,
+      tags,
     } = await getInputs()
 
     const octokit = github.getOctokit(repoToken)
@@ -56,6 +58,8 @@ const run = async (): Promise<void> => {
       baseCommitId: baseSha,
       imageId,
       imageTag,
+      componentName,
+      tags,
     })
 
     if (!issueNumber) {
