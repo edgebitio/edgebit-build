@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { createComment } from './comments'
+import { createComment, getLatestComponentComment, minimizeComment } from './comments'
 import { getInputs } from './config'
 import { findPRForCommit } from './issues'
 import { uploadSBOM } from './upload_sbom'
@@ -76,6 +76,32 @@ const run = async (): Promise<void> => {
       if (comment) {
         core.setOutput('comment-created', 'true')
         core.setOutput('comment-id', comment.id)
+
+        // Get the componet name and get its last comment
+        const regex = /componentName=(\w+)/
+        const match = result.commentBody.match(regex)
+        let component_name = ''
+        if (match && match[1]) {
+          component_name = match[1]
+        }
+
+        const latestComment = await getLatestComponentComment(
+          octokit,
+          owner,
+          repo,
+          issueNumber,
+          component_name,
+        )
+
+        // Set the minimized old comment
+        if (latestComment) {
+          try {
+            const isCommentMinimized = await minimizeComment(octokit, latestComment.id.toString())
+            core.setOutput('Comment minimized', isCommentMinimized)
+          } catch (error) {
+            core.setOutput('Error minimizing comment:', error)
+          }
+        }
       } else {
         core.setOutput('comment-created', 'false')
         core.setOutput('comment-updated', 'false')

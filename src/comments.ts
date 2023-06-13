@@ -69,3 +69,49 @@ export async function createComment(
 
   return createdComment.data
 }
+
+export async function getLatestComponentComment(
+  octokit: InstanceType<typeof GitHub>,
+  owner: string,
+  repo: string,
+  issueNumber: number,
+  componentName: string,
+): Promise<CreateIssueCommentResponseData> {
+  const allComments = await octokit.rest.issues.listComments({
+    sort: 'created',
+    issue_number: issueNumber,
+    owner,
+    repo,
+  })
+
+  const matchingComments = allComments.data
+    .filter((comment: any) => comment.body.includes(`componentName=${componentName}`))
+    .map((comment: any) => comment.id)
+
+  return matchingComments[1].data
+}
+
+export async function minimizeComment(
+  octokit: InstanceType<typeof GitHub>,
+  commentId: string,
+): Promise<boolean> {
+  const query = `
+    mutation minimizeComment($commentId: ID!) {
+      updateIssueComment(input: {id: $commentId, minimizedReason: OUTDATED}) {
+        minimizedComment {
+          isMinimized
+        }
+      }
+    }
+  `
+
+  try {
+    await octokit.graphql(query, {
+      commentId: commentId,
+    })
+
+    return true
+  } catch (error) {
+    return false
+  }
+}
