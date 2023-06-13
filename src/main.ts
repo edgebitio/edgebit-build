@@ -70,14 +70,18 @@ const run = async (): Promise<void> => {
       return
     }
 
-    const comment = await createComment(octokit, owner, repo, issueNumber, result.commentBody)
+    if (!result.skipComment) {
+      const comment = await createComment(octokit, owner, repo, issueNumber, result.commentBody)
 
-    if (comment) {
-      core.setOutput('comment-created', 'true')
-      core.setOutput('comment-id', comment.id)
+      if (comment) {
+        core.setOutput('comment-created', 'true')
+        core.setOutput('comment-id', comment.id)
+      } else {
+        core.setOutput('comment-created', 'false')
+        core.setOutput('comment-updated', 'false')
+      }
     } else {
-      core.setOutput('comment-created', 'false')
-      core.setOutput('comment-updated', 'false')
+      core.info('skiped commented as skipComment was true.')
     }
   } catch (err) {
     if (err instanceof Error) {

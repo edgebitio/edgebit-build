@@ -18,6 +18,7 @@ export type UploadSBOMParams = {
 
 export type UploadSBOMResult = {
   commentBody: string
+  skipComment: boolean
 }
 
 export async function uploadSBOM(params: UploadSBOMParams): Promise<UploadSBOMResult> {
@@ -65,6 +66,7 @@ export async function uploadSBOM(params: UploadSBOMParams): Promise<UploadSBOMRe
 
   return {
     commentBody: outputObj['comment_body'],
+    skipComment: outputObj['skip_comment'],
   }
 }
 
