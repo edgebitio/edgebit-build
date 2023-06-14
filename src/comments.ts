@@ -70,13 +70,13 @@ export async function createComment(
   return createdComment.data
 }
 
-export async function getLatestComponentComment(
+export async function getComponentComments(
   octokit: InstanceType<typeof GitHub>,
   owner: string,
   repo: string,
   issueNumber: number,
   componentName: string,
-): Promise<CreateIssueCommentResponseData> {
+): Promise<CreateIssueCommentResponseData[]> {
   const allComments = await octokit.rest.issues.listComments({
     sort: 'created',
     issue_number: issueNumber,
@@ -84,20 +84,22 @@ export async function getLatestComponentComment(
     repo,
   })
 
-  const matchingComments = allComments.data
-    .filter((comment: any) => comment.body.includes(`componentName=${componentName}`))
-    .map((comment: any) => comment.id)
+  const matchingComments = allComments.data.filter((comment: any) =>
+    comment.body.includes(`componentName=${componentName}`),
+  )
 
-  return matchingComments[1].data
+  return matchingComments
 }
 
 export async function minimizeComment(
   octokit: InstanceType<typeof GitHub>,
+  owner: string,
+  repo: string,
   commentId: string,
 ): Promise<boolean> {
   const query = `
-    mutation minimizeComment($commentId: ID!) {
-      updateIssueComment(input: {id: $commentId, minimizedReason: OUTDATED}) {
+    mutation minimizeComment($commentId: ID!, $owner: String!, $name: String!) {
+      updateIssueComment(input: {id: $commentId, minimizedReason: OUTDATED, repositoryOwner: $owner, repositoryName: $name}) {
         minimizedComment {
           isMinimized
         }
@@ -108,6 +110,8 @@ export async function minimizeComment(
   try {
     await octokit.graphql(query, {
       commentId: commentId,
+      owner: owner,
+      repo: repo,
     })
 
     return true

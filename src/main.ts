@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { createComment, getLatestComponentComment, minimizeComment } from './comments'
+import { createComment, getComponentComments, minimizeComment } from './comments'
 import { getInputs } from './config'
 import { findPRForCommit } from './issues'
 import { uploadSBOM } from './upload_sbom'
@@ -77,29 +77,35 @@ const run = async (): Promise<void> => {
         core.setOutput('comment-created', 'true')
         core.setOutput('comment-id', comment.id)
 
-        // Get the componet name and get its last comment
-        const regex = /componentName=(\w+)/
-        const match = result.commentBody.match(regex)
-        let component_name = ''
-        if (match && match[1]) {
-          component_name = match[1]
-        }
+        if (componentName) {
+          const componentComments = await getComponentComments(
+            octokit,
+            owner,
+            repo,
+            issueNumber,
+            componentName,
+          )
 
-        const latestComment = await getLatestComponentComment(
-          octokit,
-          owner,
-          repo,
-          issueNumber,
-          component_name,
-        )
+          // Remove the comment with the same ID from componentComments
+          const filteredComments = componentComments.filter(
+            (componentComment) => componentComment.id !== comment.id,
+          )
 
-        // Set the minimized old comment
-        if (latestComment) {
-          try {
-            const isCommentMinimized = await minimizeComment(octokit, latestComment.id.toString())
-            core.setOutput('Comment minimized', isCommentMinimized)
-          } catch (error) {
-            core.setOutput('Error minimizing comment:', error)
+          const latestComment = filteredComments[0]
+
+          // Set the minimized old comment
+          if (latestComment) {
+            try {
+              const isCommentMinimized = await minimizeComment(
+                octokit,
+                owner,
+                repo,
+                latestComment.id.toString(),
+              )
+              core.setOutput('Comment minimized', isCommentMinimized)
+            } catch (error) {
+              core.setOutput('Error minimizing comment:', error)
+            }
           }
         }
       } else {
