@@ -85,17 +85,17 @@ async function getComponentComments(octokit, owner, repo, issueNumber, component
     return matchingComments;
 }
 exports.getComponentComments = getComponentComments;
-async function minimizeComment(octokit, commentId) {
+async function minimizeComment(octokit, nodeID) {
     const mutation = `
-    mutation minimizeComment($commentId: ID!) {
-      minimizeComment(input: {subjectId: $commentId, classifier: OUTDATED}) {
+    mutation minimizeComment($nodeID: ID!) {
+      minimizeComment(input: {subjectId: $nodeID, classifier: OUTDATED}) {
         clientMutationId
       }
     }
   `;
     try {
         await octokit.graphql(mutation, {
-            commentId: commentId,
+            nodeID: nodeID,
         });
         return true;
     }
@@ -322,7 +322,7 @@ const run = async () => {
                     for (const currentComment of filteredComments) {
                         if (currentComment) {
                             try {
-                                const isCommentMinimized = await (0, comments_1.minimizeComment)(octokit, currentComment.id.toString());
+                                const isCommentMinimized = await (0, comments_1.minimizeComment)(octokit, currentComment.node_id);
                                 core.info(`Comment minimized: ${isCommentMinimized}`);
                             }
                             catch (error) {

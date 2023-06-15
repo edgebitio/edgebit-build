@@ -96,10 +96,7 @@ const run = async (): Promise<void> => {
           for (const currentComment of filteredComments) {
             if (currentComment) {
               try {
-                const isCommentMinimized = await minimizeComment(
-                  octokit,
-                  currentComment.id.toString(),
-                )
+                const isCommentMinimized = await minimizeComment(octokit, currentComment.node_id)
                 core.info(`Comment minimized: ${isCommentMinimized}`)
               } catch (error) {
                 core.error(`Error minimizing comment: ${error}`)

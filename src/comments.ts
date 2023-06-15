@@ -96,11 +96,11 @@ export async function getComponentComments(
 
 export async function minimizeComment(
   octokit: InstanceType<typeof GitHub>,
-  commentId: string,
+  nodeID: string,
 ): Promise<boolean> {
   const mutation = `
-    mutation minimizeComment($commentId: ID!) {
-      minimizeComment(input: {subjectId: $commentId, classifier: OUTDATED}) {
+    mutation minimizeComment($nodeID: ID!) {
+      minimizeComment(input: {subjectId: $nodeID, classifier: OUTDATED}) {
         clientMutationId
       }
     }
@@ -108,7 +108,7 @@ export async function minimizeComment(
 
   try {
     await octokit.graphql(mutation, {
-      commentId: commentId,
+      nodeID: nodeID,
     })
 
     return true
