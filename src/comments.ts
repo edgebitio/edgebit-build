@@ -119,6 +119,7 @@ export async function minimizeComment(
 
     return true
   } catch (error) {
+    core.error(`GraphQL error: ${error}`)
     return false
   }
 }
