@@ -292,6 +292,7 @@ const run = async () => {
                 core.setOutput('comment-id', comment.id);
                 if (componentName) {
                     const componentComments = await (0, comments_1.getComponentComments)(octokit, owner, repo, issueNumber, componentName);
+                    core.info(`ComponentComments: ${componentComments}`);
                     // Remove the comment with the same ID from componentComments
                     const filteredComments = componentComments.filter((componentComment) => componentComment.id !== comment.id);
                     // Minimize all old comments
@@ -299,10 +300,10 @@ const run = async () => {
                         if (currentComment) {
                             try {
                                 const isCommentMinimized = await (0, comments_1.minimizeComment)(octokit, owner, repo, currentComment.id.toString());
-                                core.setOutput('Comment minimized', isCommentMinimized);
+                                core.info(`Comment minimized: ${isCommentMinimized}`);
                             }
                             catch (error) {
-                                core.setOutput('Error minimizing comment', error);
+                                core.error(`Error minimizing comment: ${error}`);
                             }
                         }
                     }
