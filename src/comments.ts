@@ -1,5 +1,6 @@
 import { GitHub } from '@actions/github/lib/utils'
 import { Endpoints } from '@octokit/types'
+import * as core from '@actions/core'
 
 export type CreateIssueCommentResponseData =
   Endpoints['POST /repos/{owner}/{repo}/issues/{issue_number}/comments']['response']['data']
@@ -83,10 +84,12 @@ export async function getComponentComments(
     owner,
     repo,
   })
+  core.info(`All comments: ${allComments}`)
 
   const matchingComments = allComments.data.filter((comment: any) =>
     comment.body.includes(`componentName=${componentName}`),
   )
+  core.info(`All Matching comments: ${matchingComments}`)
 
   return matchingComments
 }
