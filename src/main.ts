@@ -91,20 +91,20 @@ const run = async (): Promise<void> => {
             (componentComment) => componentComment.id !== comment.id,
           )
 
-          const latestComment = filteredComments[0]
-
-          // Set the minimized old comment
-          if (latestComment) {
-            try {
-              const isCommentMinimized = await minimizeComment(
-                octokit,
-                owner,
-                repo,
-                latestComment.id.toString(),
-              )
-              core.setOutput('Comment minimized', isCommentMinimized)
-            } catch (error) {
-              core.setOutput('Error minimizing comment:', error)
+          // Minimize all old comments
+          for (const currentComment of filteredComments) {
+            if (currentComment) {
+              try {
+                const isCommentMinimized = await minimizeComment(
+                  octokit,
+                  owner,
+                  repo,
+                  currentComment.id.toString(),
+                )
+                core.setOutput('Comment minimized', isCommentMinimized)
+              } catch (error) {
+                core.setOutput('Error minimizing comment', error)
+              }
             }
           }
         }
