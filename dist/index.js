@@ -7,7 +7,7 @@ require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createComment = exports.updateComment = exports.getExistingCommentId = void 0;
+exports.minimizeComment = exports.getComponentComments = exports.createComment = exports.updateComment = exports.getExistingCommentId = void 0;
 async function getExistingCommentId(octokit, owner, repo, issueNumber, messageId) {
     const parameters = {
         owner,
@@ -48,6 +48,40 @@ async function createComment(octokit, owner, repo, issueNumber, body) {
     return createdComment.data;
 }
 exports.createComment = createComment;
+async function getComponentComments(octokit, owner, repo, issueNumber, componentName) {
+    const allComments = await octokit.rest.issues.listComments({
+        sort: 'created',
+        issue_number: issueNumber,
+        owner,
+        repo,
+    });
+    const matchingComments = allComments.data.filter((comment) => comment.body.includes(`componentName=${componentName}`));
+    return matchingComments;
+}
+exports.getComponentComments = getComponentComments;
+async function minimizeComment(octokit, owner, repo, commentId) {
+    const query = `
+    mutation minimizeComment($commentId: ID!, $owner: String!, $name: String!) {
+      updateIssueComment(input: {id: $commentId, minimizedReason: OUTDATED, repositoryOwner: $owner, repositoryName: $name}) {
+        minimizedComment {
+          isMinimized
+        }
+      }
+    }
+  `;
+    try {
+        await octokit.graphql(query, {
+            commentId: commentId,
+            owner: owner,
+            repo: repo,
+        });
+        return true;
+    }
+    catch (error) {
+        return false;
+    }
+}
+exports.minimizeComment = minimizeComment;
 
 
 /***/ }),
@@ -251,14 +285,35 @@ const run = async () => {
             core.setOutput('comment-created', 'false');
             return;
         }
-        const comment = await (0, comments_1.createComment)(octokit, owner, repo, issueNumber, result.commentBody);
-        if (comment) {
-            core.setOutput('comment-created', 'true');
-            core.setOutput('comment-id', comment.id);
+        if (!result.skipComment) {
+            const comment = await (0, comments_1.createComment)(octokit, owner, repo, issueNumber, result.commentBody);
+            if (comment) {
+                core.setOutput('comment-created', 'true');
+                core.setOutput('comment-id', comment.id);
+                if (componentName) {
+                    const componentComments = await (0, comments_1.getComponentComments)(octokit, owner, repo, issueNumber, componentName);
+                    // Remove the comment with the same ID from componentComments
+                    const filteredComments = componentComments.filter((componentComment) => componentComment.id !== comment.id);
+                    const latestComment = filteredComments[0];
+                    // Set the minimized old comment
+                    if (latestComment) {
+                        try {
+                            const isCommentMinimized = await (0, comments_1.minimizeComment)(octokit, owner, repo, latestComment.id.toString());
+                            core.setOutput('Comment minimized', isCommentMinimized);
+                        }
+                        catch (error) {
+                            core.setOutput('Error minimizing comment:', error);
+                        }
+                    }
+                }
+            }
+            else {
+                core.setOutput('comment-created', 'false');
+                core.setOutput('comment-updated', 'false');
+            }
         }
         else {
-            core.setOutput('comment-created', 'false');
-            core.setOutput('comment-updated', 'false');
+            core.info('skiped commented as skipComment was true.');
         }
     }
     catch (err) {
@@ -308,7 +363,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getCLI = exports.uploadSBOM = void 0;
 const exec = __importStar(__nccwpck_require__(1514));
 const tc = __importStar(__nccwpck_require__(7784));
-const ebctlVersion = 'v0.5.0';
+const ebctlVersion = 'v0.5.1';
 async function uploadSBOM(params) {
     const ebctl = await getCLI();
     const args = ['upload-sbom-for-ci'];
@@ -342,6 +397,7 @@ async function uploadSBOM(params) {
     const outputObj = JSON.parse(output.stdout);
     return {
         commentBody: outputObj['comment_body'],
+        skipComment: outputObj['skip_comment'],
     };
 }
 exports.uploadSBOM = uploadSBOM;
