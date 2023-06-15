@@ -100,7 +100,7 @@ export async function minimizeComment(
 ): Promise<boolean> {
   const mutation = `
     mutation minimizeComment($nodeID: ID!) {
-      minimizeComment(input: {subjectId: $nodeID, classifier: "OUTDATED"}) {
+      minimizeComment(input: {subjectId: $nodeID, classifier: 'OUTDATED'}) {
         clientMutationId
       }
     }

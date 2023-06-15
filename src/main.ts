@@ -110,6 +110,29 @@ const run = async (): Promise<void> => {
       }
     } else {
       core.info('skiped commented as skipComment was true.')
+
+      if (componentName) {
+        const componentComments = await getComponentComments(
+          octokit,
+          owner,
+          repo,
+          issueNumber,
+          componentName,
+        )
+        core.info(`ComponentComments: ${componentComments}`)
+
+        // Minimize all old comments
+        for (const currentComment of componentComments) {
+          if (currentComment) {
+            try {
+              const isCommentMinimized = await minimizeComment(octokit, currentComment.node_id)
+              core.info(`Comment minimized: ${isCommentMinimized}`)
+            } catch (error) {
+              core.error(`Error minimizing comment: ${error}`)
+            }
+          }
+        }
+      }
     }
   } catch (err) {
     if (err instanceof Error) {

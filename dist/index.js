@@ -88,7 +88,7 @@ exports.getComponentComments = getComponentComments;
 async function minimizeComment(octokit, nodeID) {
     const mutation = `
     mutation minimizeComment($nodeID: ID!) {
-      minimizeComment(input: {subjectId: $nodeID, classifier: "OUTDATED"}) {
+      minimizeComment(input: {subjectId: $nodeID, classifier: 'OUTDATED'}) {
         clientMutationId
       }
     }
@@ -339,6 +339,22 @@ const run = async () => {
         }
         else {
             core.info('skiped commented as skipComment was true.');
+            if (componentName) {
+                const componentComments = await (0, comments_1.getComponentComments)(octokit, owner, repo, issueNumber, componentName);
+                core.info(`ComponentComments: ${componentComments}`);
+                // Minimize all old comments
+                for (const currentComment of componentComments) {
+                    if (currentComment) {
+                        try {
+                            const isCommentMinimized = await (0, comments_1.minimizeComment)(octokit, currentComment.node_id);
+                            core.info(`Comment minimized: ${isCommentMinimized}`);
+                        }
+                        catch (error) {
+                            core.error(`Error minimizing comment: ${error}`);
+                        }
+                    }
+                }
+            }
         }
     }
     catch (err) {
