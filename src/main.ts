@@ -98,8 +98,6 @@ const run = async (): Promise<void> => {
               try {
                 const isCommentMinimized = await minimizeComment(
                   octokit,
-                  owner,
-                  repo,
                   currentComment.id.toString(),
                 )
                 core.info(`Comment minimized: ${isCommentMinimized}`)
