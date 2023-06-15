@@ -85,6 +85,7 @@ const run = async (): Promise<void> => {
             issueNumber,
             componentName,
           )
+          core.info(`ComponentComments: ${componentComments}`)
 
           // Remove the comment with the same ID from componentComments
           const filteredComments = componentComments.filter(
@@ -101,9 +102,9 @@ const run = async (): Promise<void> => {
                   repo,
                   currentComment.id.toString(),
                 )
-                core.setOutput('Comment minimized', isCommentMinimized)
+                core.info(`Comment minimized: ${isCommentMinimized}`)
               } catch (error) {
-                core.setOutput('Error minimizing comment', error)
+                core.error(`Error minimizing comment: ${error}`)
               }
             }
           }
