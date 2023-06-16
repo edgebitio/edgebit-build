@@ -1,5 +1,6 @@
 import { GitHub } from '@actions/github/lib/utils'
 import { Endpoints } from '@octokit/types'
+import * as core from '@actions/core'
 
 export type CreateIssueCommentResponseData =
   Endpoints['POST /repos/{owner}/{repo}/issues/{issue_number}/comments']['response']['data']
@@ -68,4 +69,51 @@ export async function createComment(
   })
 
   return createdComment.data
+}
+
+export async function getComponentComments(
+  octokit: InstanceType<typeof GitHub>,
+  owner: string,
+  repo: string,
+  issueNumber: number,
+  componentName: string,
+): Promise<CreateIssueCommentResponseData[]> {
+  const allComments = await octokit.rest.issues.listComments({
+    sort: 'created',
+    issue_number: issueNumber,
+    owner,
+    repo,
+  })
+  core.info(`All comments: ${allComments}`)
+
+  const matchingComments = allComments.data.filter((comment: any) =>
+    comment.body.includes(`componentName=${componentName}`),
+  )
+  core.info(`All Matching comments: ${matchingComments}`)
+
+  return matchingComments
+}
+
+export async function minimizeComment(
+  octokit: InstanceType<typeof GitHub>,
+  nodeID: string,
+): Promise<boolean> {
+  const mutation = `
+    mutation minimizeComment($nodeID: ID!) {
+      minimizeComment(input: {subjectId: $nodeID, classifier: OUTDATED}) {
+        clientMutationId
+      }
+    }
+  `
+
+  try {
+    await octokit.graphql(mutation, {
+      nodeID: nodeID,
+    })
+
+    return true
+  } catch (error) {
+    core.error(`GraphQL error: ${error}`)
+    return false
+  }
 }

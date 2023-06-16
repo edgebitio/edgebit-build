@@ -1,7 +1,7 @@
 import * as exec from '@actions/exec'
 import * as tc from '@actions/tool-cache'
 
-const ebctlVersion = 'v0.5.0'
+const ebctlVersion = 'v0.5.1'
 
 export type UploadSBOMParams = {
   sbomPath: string
@@ -18,6 +18,7 @@ export type UploadSBOMParams = {
 
 export type UploadSBOMResult = {
   commentBody: string
+  skipComment: boolean
 }
 
 export async function uploadSBOM(params: UploadSBOMParams): Promise<UploadSBOMResult> {
@@ -65,6 +66,7 @@ export async function uploadSBOM(params: UploadSBOMParams): Promise<UploadSBOMRe
 
   return {
     commentBody: outputObj['comment_body'],
+    skipComment: outputObj['skip_comment'],
   }
 }
 
