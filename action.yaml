@@ -29,6 +29,12 @@ inputs:
   tags:
     description: 'Comma-separated list of Component tags to apply to the SBOM'
     required: false
+  pr-number:
+    description: 'Pull Request number on which to comment'
+    required: false
+  args-file:
+    description: 'A JSON file containing input overrides to this action'
+    required: false
 outputs:
   message:
     description: 'Message about the SBOM uploaded to EdgeBit'
