@@ -139,19 +139,42 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getInputs = void 0;
+const fs = __importStar(__nccwpck_require__(7147));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+function getInput(name, overrides, required) {
+    const val = overrides[name] || undefined;
+    if (val !== undefined) {
+        return val;
+    }
+    return core.getInput(name, { required });
+}
+function readOverrides() {
+    try {
+        const argsFile = core.getInput('args-file', { required: false }) || undefined;
+        if (argsFile) {
+            const str = fs.readFileSync(argsFile, 'utf-8');
+            return JSON.parse(str);
+        }
+    }
+    catch (err) {
+        // fallthrough to return an empty dict
+    }
+    return {};
+}
 async function getInputs() {
     var _a;
-    const edgebitUrl = core.getInput('edgebit-url', { required: true });
-    const edgebitLabels = core.getInput('labels', { required: false });
+    const args = readOverrides();
+    const edgebitUrl = getInput('edgebit-url', args, true);
+    const edgebitLabels = getInput('labels', args, false);
     const edgebitSource = 'github';
-    const edgebitToken = core.getInput('token', { required: true });
-    const repoToken = core.getInput('repo-token', { required: true });
-    const imageId = core.getInput('image-id', { required: false }) || undefined;
-    const imageTag = core.getInput('image-tag', { required: false }) || undefined;
-    const componentName = core.getInput('component', { required: false }) || undefined;
-    const tags = core.getInput('tags', { required: false }) || undefined;
+    const edgebitToken = getInput('token', args, true);
+    const repoToken = getInput('repo-token', args, true);
+    const imageId = getInput('image-id', args, false) || undefined;
+    const imageTag = getInput('image-tag', args, false) || undefined;
+    const componentName = getInput('component', args, false) || undefined;
+    const tags = getInput('tags', args, false) || undefined;
+    let pullRequestNumber = parseInt(getInput('pr-number', args, false)) || undefined;
     if (!edgebitUrl) {
         throw new Error('no EdgeBit URL specified, please specify an EdgeBit URL');
     }
@@ -165,19 +188,20 @@ async function getInputs() {
         throw new Error('unable to determine repository from request type');
     }
     let baseCommit = undefined;
-    let pullRequestNumber = undefined;
     const headCommit = github.context.sha;
-    if (github.context.eventName === 'pull_request') {
-        const pullRequestPayload = github.context.payload;
-        baseCommit = pullRequestPayload.pull_request.base.sha;
-        pullRequestNumber = pullRequestPayload.number;
-        core.info(`pull request event:`);
-        core.info(`  PR #${pullRequestPayload.number}`);
-        core.info(`  base commit: ${baseCommit}`);
-    }
-    else if (github.context.issue.number) {
-        core.info(`not a pull request event, but got issue number: ${github.context.issue.number}`);
-        pullRequestNumber = github.context.issue.number;
+    if (pullRequestNumber === undefined) {
+        if (github.context.eventName === 'pull_request') {
+            const pullRequestPayload = github.context.payload;
+            baseCommit = pullRequestPayload.pull_request.base.sha;
+            pullRequestNumber = pullRequestPayload.number;
+            core.info(`pull request event:`);
+            core.info(`  PR #${pullRequestPayload.number}`);
+            core.info(`  base commit: ${baseCommit}`);
+        }
+        else if (github.context.issue.number) {
+            core.info(`not a pull request event, but got issue number: ${github.context.issue.number}`);
+            pullRequestNumber = github.context.issue.number;
+        }
     }
     const [owner, repo] = repoFullName.split('/');
     return {
