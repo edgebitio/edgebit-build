@@ -31,6 +31,18 @@ const run = async (): Promise<void> => {
     if (pullRequestNumber) {
       core.info(`pull request number specified: ${pullRequestNumber}`)
       issueNumber = pullRequestNumber
+      const { data: pullRequest } = await octokit.rest.pulls.get({
+        owner,
+        repo,
+        pull_number: pullRequestNumber,
+      })
+
+      if (pullRequest) {
+        core.info(`found PR #${pullRequestNumber}`)
+        baseSha = priorSha || pullRequest.base.sha
+      } else {
+        core.info(`no PR found for ${pullRequestNumber}`)
+      }
     } else {
       core.info(`attempting to locate PR for commit ${commitSha}...`)
       const pr = await findPRForCommit(octokit, owner, repo, commitSha)
