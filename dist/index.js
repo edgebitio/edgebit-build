@@ -198,6 +198,12 @@ async function getInputs() {
             core.info(`  PR #${pullRequestPayload.number}`);
             core.info(`  base commit: ${baseCommit}`);
         }
+        else if (github.context.eventName === 'workflow_run') {
+            const workflowPayload = github.context.payload;
+            baseCommit = workflowPayload.head_sha;
+            core.info(`workflow run event:`);
+            core.info(`  base commit: ${baseCommit}`);
+        }
         else if (github.context.issue.number) {
             core.info(`not a pull request event, but got issue number: ${github.context.issue.number}`);
             pullRequestNumber = github.context.issue.number;
@@ -298,6 +304,18 @@ const run = async () => {
         if (pullRequestNumber) {
             core.info(`pull request number specified: ${pullRequestNumber}`);
             issueNumber = pullRequestNumber;
+            const { data: pullRequest } = await octokit.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: pullRequestNumber,
+            });
+            if (pullRequest) {
+                core.info(`found PR #${pullRequestNumber}`);
+                baseSha = priorSha || pullRequest.base.sha;
+            }
+            else {
+                core.info(`no PR found for ${pullRequestNumber}`);
+            }
         }
         else {
             core.info(`attempting to locate PR for commit ${commitSha}...`);

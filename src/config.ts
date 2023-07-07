@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { PullRequestOpenedEvent } from '@octokit/webhooks-definitions/schema'
+import { PullRequestOpenedEvent, WorkflowRun } from '@octokit/webhooks-definitions/schema'
 
 interface Inputs {
   edgebitUrl: string
@@ -89,6 +89,13 @@ export async function getInputs(): Promise<Inputs> {
 
       core.info(`pull request event:`)
       core.info(`  PR #${pullRequestPayload.number}`)
+      core.info(`  base commit: ${baseCommit}`)
+    } else if (github.context.eventName === 'workflow_run') {
+      const workflowPayload = github.context.payload as WorkflowRun
+
+      baseCommit = workflowPayload.head_sha
+
+      core.info(`workflow run event:`)
       core.info(`  base commit: ${baseCommit}`)
     } else if (github.context.issue.number) {
       core.info(`not a pull request event, but got issue number: ${github.context.issue.number}`)
