@@ -149,6 +149,16 @@ function getInput(name, overrides, required) {
     }
     return core.getInput(name, { required });
 }
+function parseBool(val, defVal) {
+    switch (val.toLowerCase()) {
+        case 'true':
+            return true;
+        case 'false':
+            return false;
+        default:
+            return defVal;
+    }
+}
 function readOverrides() {
     try {
         const argsFile = core.getInput('args-file', { required: false }) || undefined;
@@ -174,6 +184,7 @@ async function getInputs() {
     const imageTag = getInput('image-tag', args, false) || undefined;
     const componentName = getInput('component', args, false) || undefined;
     const tags = getInput('tags', args, false) || undefined;
+    const postComment = parseBool(getInput('post-comment', args, false), true);
     let pullRequestNumber = parseInt(getInput('pr-number', args, false)) || undefined;
     if (!edgebitUrl) {
         throw new Error('no EdgeBit URL specified, please specify an EdgeBit URL');
@@ -226,6 +237,7 @@ async function getInputs() {
         imageTag,
         componentName,
         tags,
+        postComment,
     };
 }
 exports.getInputs = getInputs;
@@ -297,7 +309,7 @@ const issues_1 = __nccwpck_require__(6962);
 const upload_sbom_1 = __nccwpck_require__(6744);
 const run = async () => {
     try {
-        const { edgebitUrl, edgebitToken, repoToken, pullRequestNumber, commitSha, priorSha, owner, repo, sbomPath, imageId, imageTag, componentName, tags, } = await (0, config_1.getInputs)();
+        const { edgebitUrl, edgebitToken, repoToken, pullRequestNumber, commitSha, priorSha, owner, repo, sbomPath, imageId, imageTag, componentName, tags, postComment, } = await (0, config_1.getInputs)();
         const octokit = github.getOctokit(repoToken);
         let baseSha = priorSha;
         let issueNumber;
@@ -350,7 +362,7 @@ const run = async () => {
             core.setOutput('comment-created', 'false');
             return;
         }
-        if (!result.skipComment) {
+        if (postComment && !result.skipComment) {
             const comment = await (0, comments_1.createComment)(octokit, owner, repo, issueNumber, result.commentBody);
             if (comment) {
                 core.setOutput('comment-created', 'true');

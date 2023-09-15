@@ -21,6 +21,7 @@ const run = async (): Promise<void> => {
       imageTag,
       componentName,
       tags,
+      postComment,
     } = await getInputs()
 
     const octokit = github.getOctokit(repoToken)
@@ -82,7 +83,7 @@ const run = async (): Promise<void> => {
       return
     }
 
-    if (!result.skipComment) {
+    if (postComment && !result.skipComment) {
       const comment = await createComment(octokit, owner, repo, issueNumber, result.commentBody)
 
       if (comment) {

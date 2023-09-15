@@ -32,6 +32,9 @@ inputs:
   pr-number:
     description: 'Pull Request number on which to comment'
     required: false
+  post-comment:
+    description: 'Post comments on the pull request'
+    required: false
   args-file:
     description: 'A JSON file containing input overrides to this action'
     required: false
