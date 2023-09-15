@@ -19,6 +19,7 @@ interface Inputs {
   imageTag: string | undefined
   componentName?: string
   tags?: string
+  postComment: boolean
 }
 
 function getInput(name: string, overrides: { [key: string]: string }, required: boolean): string {
@@ -28,6 +29,17 @@ function getInput(name: string, overrides: { [key: string]: string }, required: 
   }
 
   return core.getInput(name, { required })
+}
+
+function parseBool(val: string, defVal: boolean): boolean {
+  switch (val.toLowerCase()) {
+    case 'true':
+      return true
+    case 'false':
+      return false
+    default:
+      return defVal
+  }
 }
 
 function readOverrides(): { [key: string]: string } {
@@ -56,6 +68,7 @@ export async function getInputs(): Promise<Inputs> {
   const imageTag = getInput('image-tag', args, false) || undefined
   const componentName = getInput('component', args, false) || undefined
   const tags = getInput('tags', args, false) || undefined
+  const postComment = parseBool(getInput('post-comment', args, false), true)
   let pullRequestNumber = parseInt(getInput('pr-number', args, false)) || undefined
 
   if (!edgebitUrl) {
@@ -121,5 +134,6 @@ export async function getInputs(): Promise<Inputs> {
     imageTag,
     componentName,
     tags,
+    postComment,
   }
 }
