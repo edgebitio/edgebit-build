@@ -30,7 +30,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.minimizeComment = exports.getComponentComments = exports.createComment = exports.updateComment = exports.getExistingCommentId = void 0;
+exports.minimizeComments = exports.minimizeComment = exports.getComponentComments = exports.createComment = exports.updateComment = exports.getExistingCommentId = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 async function getExistingCommentId(octokit, owner, repo, issueNumber, messageId) {
     const parameters = {
@@ -105,6 +105,21 @@ async function minimizeComment(octokit, nodeID) {
     }
 }
 exports.minimizeComment = minimizeComment;
+async function minimizeComments(octokit, comments) {
+    core.info(`ComponentComments: ${comments}`);
+    for (const currentComment of comments) {
+        if (currentComment) {
+            try {
+                const isCommentMinimized = await minimizeComment(octokit, currentComment.node_id);
+                core.info(`Comment minimized: ${isCommentMinimized}`);
+            }
+            catch (error) {
+                core.error(`Error minimizing comment: ${error}`);
+            }
+        }
+    }
+}
+exports.minimizeComments = minimizeComments;
 
 
 /***/ }),
@@ -362,51 +377,31 @@ const run = async () => {
             core.setOutput('comment-created', 'false');
             return;
         }
-        if (postComment && !result.skipComment) {
-            const comment = await (0, comments_1.createComment)(octokit, owner, repo, issueNumber, result.commentBody);
-            if (comment) {
-                core.setOutput('comment-created', 'true');
-                core.setOutput('comment-id', comment.id);
-                if (componentName) {
-                    const componentComments = await (0, comments_1.getComponentComments)(octokit, owner, repo, issueNumber, componentName);
-                    core.info(`ComponentComments: ${componentComments}`);
-                    // Remove the comment with the same ID from componentComments
-                    const filteredComments = componentComments.filter((componentComment) => componentComment.id !== comment.id);
-                    // Minimize all old comments
-                    for (const currentComment of filteredComments) {
-                        if (currentComment) {
-                            try {
-                                const isCommentMinimized = await (0, comments_1.minimizeComment)(octokit, currentComment.node_id);
-                                core.info(`Comment minimized: ${isCommentMinimized}`);
-                            }
-                            catch (error) {
-                                core.error(`Error minimizing comment: ${error}`);
-                            }
-                        }
+        if (postComment) {
+            if (!result.skipComment) {
+                const comment = await (0, comments_1.createComment)(octokit, owner, repo, issueNumber, result.commentBody);
+                if (comment) {
+                    core.setOutput('comment-created', 'true');
+                    core.setOutput('comment-id', comment.id);
+                    if (componentName) {
+                        const componentComments = await (0, comments_1.getComponentComments)(octokit, owner, repo, issueNumber, componentName);
+                        core.info(`ComponentComments: ${componentComments}`);
+                        // Remove the comment with the same ID from componentComments
+                        const filteredComments = componentComments.filter((componentComment) => componentComment.id !== comment.id);
+                        (0, comments_1.minimizeComments)(octokit, filteredComments);
                     }
+                }
+                else {
+                    core.setOutput('comment-created', 'false');
+                    core.setOutput('comment-updated', 'false');
                 }
             }
             else {
-                core.setOutput('comment-created', 'false');
-                core.setOutput('comment-updated', 'false');
-            }
-        }
-        else {
-            core.info('skiped commented as skipComment was true.');
-            if (componentName) {
-                const componentComments = await (0, comments_1.getComponentComments)(octokit, owner, repo, issueNumber, componentName);
-                core.info(`ComponentComments: ${componentComments}`);
-                // Minimize all old comments
-                for (const currentComment of componentComments) {
-                    if (currentComment) {
-                        try {
-                            const isCommentMinimized = await (0, comments_1.minimizeComment)(octokit, currentComment.node_id);
-                            core.info(`Comment minimized: ${isCommentMinimized}`);
-                        }
-                        catch (error) {
-                            core.error(`Error minimizing comment: ${error}`);
-                        }
-                    }
+                core.info('skiped commented as skipComment was true.');
+                if (componentName) {
+                    const componentComments = await (0, comments_1.getComponentComments)(octokit, owner, repo, issueNumber, componentName);
+                    core.info(`ComponentComments: ${componentComments}`);
+                    (0, comments_1.minimizeComments)(octokit, componentComments);
                 }
             }
         }

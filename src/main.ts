@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { createComment, getComponentComments, minimizeComment } from './comments'
+import { createComment, getComponentComments, minimizeComments } from './comments'
 import { getInputs } from './config'
 import { findPRForCommit } from './issues'
 import { uploadSBOM } from './upload_sbom'
@@ -83,12 +83,37 @@ const run = async (): Promise<void> => {
       return
     }
 
-    if (postComment && !result.skipComment) {
-      const comment = await createComment(octokit, owner, repo, issueNumber, result.commentBody)
+    if (postComment) {
+      if (!result.skipComment) {
+        const comment = await createComment(octokit, owner, repo, issueNumber, result.commentBody)
 
-      if (comment) {
-        core.setOutput('comment-created', 'true')
-        core.setOutput('comment-id', comment.id)
+        if (comment) {
+          core.setOutput('comment-created', 'true')
+          core.setOutput('comment-id', comment.id)
+
+          if (componentName) {
+            const componentComments = await getComponentComments(
+              octokit,
+              owner,
+              repo,
+              issueNumber,
+              componentName,
+            )
+            core.info(`ComponentComments: ${componentComments}`)
+
+            // Remove the comment with the same ID from componentComments
+            const filteredComments = componentComments.filter(
+              (componentComment) => componentComment.id !== comment.id,
+            )
+
+            minimizeComments(octokit, filteredComments)
+          }
+        } else {
+          core.setOutput('comment-created', 'false')
+          core.setOutput('comment-updated', 'false')
+        }
+      } else {
+        core.info('skiped commented as skipComment was true.')
 
         if (componentName) {
           const componentComments = await getComponentComments(
@@ -100,50 +125,7 @@ const run = async (): Promise<void> => {
           )
           core.info(`ComponentComments: ${componentComments}`)
 
-          // Remove the comment with the same ID from componentComments
-          const filteredComments = componentComments.filter(
-            (componentComment) => componentComment.id !== comment.id,
-          )
-
-          // Minimize all old comments
-          for (const currentComment of filteredComments) {
-            if (currentComment) {
-              try {
-                const isCommentMinimized = await minimizeComment(octokit, currentComment.node_id)
-                core.info(`Comment minimized: ${isCommentMinimized}`)
-              } catch (error) {
-                core.error(`Error minimizing comment: ${error}`)
-              }
-            }
-          }
-        }
-      } else {
-        core.setOutput('comment-created', 'false')
-        core.setOutput('comment-updated', 'false')
-      }
-    } else {
-      core.info('skiped commented as skipComment was true.')
-
-      if (componentName) {
-        const componentComments = await getComponentComments(
-          octokit,
-          owner,
-          repo,
-          issueNumber,
-          componentName,
-        )
-        core.info(`ComponentComments: ${componentComments}`)
-
-        // Minimize all old comments
-        for (const currentComment of componentComments) {
-          if (currentComment) {
-            try {
-              const isCommentMinimized = await minimizeComment(octokit, currentComment.node_id)
-              core.info(`Comment minimized: ${isCommentMinimized}`)
-            } catch (error) {
-              core.error(`Error minimizing comment: ${error}`)
-            }
-          }
+          minimizeComments(octokit, componentComments)
         }
       }
     }
