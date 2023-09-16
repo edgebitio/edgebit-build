@@ -117,3 +117,21 @@ export async function minimizeComment(
     return false
   }
 }
+
+export async function minimizeComments(
+  octokit: InstanceType<typeof GitHub>,
+  comments: CreateIssueCommentResponseData[],
+) {
+  core.info(`ComponentComments: ${comments}`)
+
+  for (const currentComment of comments) {
+    if (currentComment) {
+      try {
+        const isCommentMinimized = await minimizeComment(octokit, currentComment.node_id)
+        core.info(`Comment minimized: ${isCommentMinimized}`)
+      } catch (error) {
+        core.error(`Error minimizing comment: ${error}`)
+      }
+    }
+  }
+}
