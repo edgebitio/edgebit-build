@@ -199,7 +199,7 @@ async function getInputs() {
     const imageTag = getInput('image-tag', args, false) || undefined;
     const componentName = getInput('component', args, false) || undefined;
     const tags = getInput('tags', args, false) || undefined;
-    const postComment = parseBool(getInput('post-comment', args, false), true);
+    const postComment = parseBool(getInput('post-comment', args, false), false);
     let pullRequestNumber = parseInt(getInput('pr-number', args, false)) || undefined;
     if (!edgebitUrl) {
         throw new Error('no EdgeBit URL specified, please specify an EdgeBit URL');
