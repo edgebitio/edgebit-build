@@ -198,7 +198,7 @@ async function getInputs() {
     const imageId = getInput('image-id', args, false) || undefined;
     const imageTag = getInput('image-tag', args, false) || undefined;
     const componentName = getInput('component', args, false) || undefined;
-    const tags = getInput('tags', args, false) || undefined;
+    const tagsJoined = getInput('tags', args, false) || undefined;
     const postComment = parseBool(getInput('post-comment', args, false), false);
     let pullRequestNumber = parseInt(getInput('pr-number', args, false)) || undefined;
     if (!edgebitUrl) {
@@ -236,6 +236,12 @@ async function getInputs() {
         }
     }
     const [owner, repo] = repoFullName.split('/');
+    const tags = tagsJoined === undefined
+        ? []
+        : tagsJoined
+            .split(',')
+            .map((t) => t.trim())
+            .filter((t) => t.length > 0);
     return {
         edgebitUrl,
         edgebitLabels,
@@ -466,8 +472,8 @@ async function uploadSBOM(params) {
     if (params.componentName) {
         args.push('--component', params.componentName);
     }
-    if (params.tags) {
-        args.push('--tag', params.tags);
+    for (const tag of params.tags) {
+        args.push('--tag', tag);
     }
     args.push('--repo', params.sourceRepoUrl);
     args.push('--commit', params.sourceCommitId);

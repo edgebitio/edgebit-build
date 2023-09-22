@@ -13,7 +13,7 @@ export type UploadSBOMParams = {
   sourceCommitId: string
   baseCommitId?: string
   componentName?: string
-  tags?: string
+  tags: string[]
 }
 
 export type UploadSBOMResult = {
@@ -38,8 +38,8 @@ export async function uploadSBOM(params: UploadSBOMParams): Promise<UploadSBOMRe
     args.push('--component', params.componentName)
   }
 
-  if (params.tags) {
-    args.push('--tag', params.tags)
+  for (const tag of params.tags) {
+    args.push('--tag', tag)
   }
 
   args.push('--repo', params.sourceRepoUrl)
