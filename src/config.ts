@@ -18,7 +18,7 @@ interface Inputs {
   imageId: string | undefined
   imageTag: string | undefined
   componentName?: string
-  tags?: string
+  tags: string[]
   postComment: boolean
 }
 
@@ -67,7 +67,7 @@ export async function getInputs(): Promise<Inputs> {
   const imageId = getInput('image-id', args, false) || undefined
   const imageTag = getInput('image-tag', args, false) || undefined
   const componentName = getInput('component', args, false) || undefined
-  const tags = getInput('tags', args, false) || undefined
+  const tagsJoined = getInput('tags', args, false) || undefined
   const postComment = parseBool(getInput('post-comment', args, false), false)
   let pullRequestNumber = parseInt(getInput('pr-number', args, false)) || undefined
 
@@ -117,6 +117,14 @@ export async function getInputs(): Promise<Inputs> {
   }
 
   const [owner, repo] = repoFullName.split('/')
+
+  const tags =
+    tagsJoined === undefined
+      ? []
+      : tagsJoined
+          .split(',')
+          .map((t) => t.trim())
+          .filter((t) => t.length > 0)
 
   return {
     edgebitUrl,
