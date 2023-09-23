@@ -13,7 +13,8 @@ inputs:
     required: false
   repo-token:
     description: 'GitHub API token used to post comments on pull requests'
-    required: true
+    default: ${{ github.token }}
+    required: false
   sbom-file:
     description: 'Path to the SBOM file to upload'
     required: false
