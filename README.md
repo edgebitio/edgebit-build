@@ -1,6 +1,6 @@
 # EdgeBit Build Action
 
-This action uploads software bill-of-materials (SBOM) and build metadata to [EdgeBit](https://edgebit.io) for vulnerability analysis and dependency inventory. Read [Configuring a Build Pipeline](https://edgebit.io/docs/0.x/install-build/) for more configuration details.
+This action uploads software bill-of-materials (SBOM) and build metadata to [EdgeBit](https://edgebit.io) for vulnerability analysis and dependency inventory. Read [Configuring a Build Pipeline](https://edgebit.io/docs/0.x/install-build-actions/) for more configuration details.
 
 EdgeBit secures your software supply chain by focusing on code that is actually running. This simplifies vulnerability management as it cuts through noise, like inbox zero for CVEs.
 
@@ -10,69 +10,85 @@ Less noise equals less frustration between security and engineering teams. And f
 
 | Input Name | Description | Value |
 |------------|-------------|-------|
-| `organization` | EdgeBit organization name, eg `foo` from https://foo.edgebit.io | Required |
-| `token` | EdgeBit access token | Required |
-| `labels` | Key/value labels to apply to the metadata for organizational purposes | Optional, `"foo=bar, fizz=buzz"` |
-| `repo-token` | GitHub API token used to post comments on pull requests | Required, `${{ secrets.GITHUB_TOKEN }}` |
+| `edgebit-url` | EdgeBit organization url | Required<br/>`https://foo.edgebit.io` |
+| `token` | EdgeBit access token | Required<br/>`${{ secrets.EDGEBIT_TOKEN }}`|
+| `sbom-file` | Location of the SBOM on disk | Required<br/>`/tmp/sbom.syft.json` |
+| `component` | Name of the component, like a frontend or backend. A new component will be created automatically if it doesn't exist. | Optional<br/>`my-frontend` |
+| `tags` | Identifiers to organize a single SBOM in a stream of SBOMs. Conceptually similar to container tags. | Optional<br/>`'latest', 'v1.2.3'` |
+| `repo-token` | GitHub API token used to post comments on PRs | Optional<br/>`${{ secrets.GITHUB_TOKEN }}` |
+| `image-tag` | The tag of the container image | Optional<br/>Taken from the build step |
+| `image-id` | The ID of the container image | Optional<br/>Taken from the build step |
 
 ## Example Usage with Container
 
-To trigger this job after your container is built, replace `Build Container` with the job name.
+Use this pipeline if your deployment artifact is a container.
+
+Locate the workflow that builds the Docker container and add steps to generate and upload the SBOM.
+
+This shows an example workflow file with the added steps.
+
+This action assumes that the default branch is named main. When the code is merged into main, it will add a latest tag for the corresponding SBOM.
 
 ```yaml
-name: EdgeBit
+name: Build
 
 on:
   push:
     branches:
       - '*'
   pull_request:
-    types: [opened, reopened]
-  workflow_run:
-    workflows: ["Build Container"]
-    types:
-      - completed
+    types: [opened, reopened, synchronize]
 
-permissions:
-  id-token: write
-  contents: read
-  pull-requests: write
+env:
+  CONTAINER_IMAGE: registry.example.com/foo:latest
 
 jobs:
-  upload-sbom:
-
+  build-container:
     runs-on: ubuntu-latest
 
-    # to prevent duplication on a push & PR in quick succession: 
-    # 1. if the push is the first commit on a branch
-    #  - skip the push event
-    #  - wait for the PR event to trigger the run
-    #  - grab the SHA of the PR's target base (e.g. last commit on main) for SBOM comparison
-    #    the PR target is only accessible on the PR event, hence this complication
-    #    one side effect is that a delay in opening a PR doesn't impact bot behavior
-    # 2. if the push is a subsequent commit, use the previous commit SHA for SBOM comparison
-    if: (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000') || github.event_name == 'pull_request'
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
 
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v4
+        with:
+          # Ensure load or push is set to true
+          load: true
+          tags: ${{ env.CONTAINER_IMAGE }}
+
+      #
+      # Add these steps following the build
+      # Assumes that the build step id is "build"
+      #
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
           # generate for the container built above
-          image: registry.example.com/example/image_name:tag
-          artifact-name: sbom.spdx
+          image: ${{ steps.build.outputs.imageid }}
+          output-file: /tmp/sbom.syft.json
+          upload-artifact: false
+          format: syft-json
 
       - name: Upload SBOM to EdgeBit
-        uses: edgebitio/edgebit-build@main
+        uses: edgebitio/edgebit-build@v1
         with:
-          organization: foo
+          edgebit-url: https://foo.edgebit.io
+          image-id: ${{ steps.build.outputs.imageid }}
+          image-tag: ${{ env.CONTAINER_IMAGE }}
           token: ${{ secrets.EDGEBIT_TOKEN }}
-          labels: 'foo=bar, fizz=buzz'
+          tags: ${{ github.ref == 'refs/heads/main' && 'latest' || '' }}
+          component: my-frontend
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+          sbom-file: /tmp/sbom.syft.json
 ```
 
-## Example Usage with Local Code
+## Example Usage with Source Code
+
+Use this pipeline if the container action isn’t able to find the dependencies of your container image.
+
+This action assumes that the default branch is named `main`. When the code is merged into main, it will add a `latest` tag for the corresponding SBOM.
 
 ```yaml
 name: EdgeBit
@@ -80,14 +96,9 @@ name: EdgeBit
 on:
   push:
     branches:
-      - '*'
+      - 'main'
   pull_request:
-    types: [opened, reopened]
-
-permissions:
-  id-token: write
-  contents: read
-  pull-requests: write
+    types: [opened, reopened, synchronize]
 
 jobs:
   upload-sbom:
@@ -105,15 +116,19 @@ jobs:
         with:
           # generate for the current directory
           path: .
-          artifact-name: sbom.spdx
+          output-file: /tmp/sbom.syft.json
+          upload-artifact: false
+          format: syft-json
 
       - name: Upload SBOM to EdgeBit
         uses: edgebitio/edgebit-build@main
         with:
-          organization: foo
-          token: ${{ secrets.EDGEBIT_ACCESS_TOKEN }}
-          labels: 'foo=bar, fizz=buzz'
+          edgebit-url: https://foo.edgebit.io
+          token: ${{ secrets.EDGEBIT_TOKEN }}
+          tags: ${{ github.ref == 'refs/heads/main' && 'latest' || '' }}
+          component: foo
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+          sbom-file: /tmp/sbom.syft.json
 ```
 
 ## Building a Release
