@@ -26,6 +26,7 @@ const run = async (): Promise<void> => {
 
     const octokit = github.getOctokit(repoToken)
 
+    let headSha = commitSha
     let baseSha = priorSha
     let issueNumber: number | undefined
 
@@ -40,6 +41,13 @@ const run = async (): Promise<void> => {
 
       if (pullRequest) {
         core.info(`found PR #${pullRequestNumber}`)
+        // If the PR is open, merge_commit_sha contains the SHA of the
+        // "test commit" that was checked out and the SBOM build against.
+        // If the PR is merged, merge_commit_sha will contain the actual
+        // merge commit. As such, it should be preferred over head.sha.
+        // The GH app has logic to detect open PRs and add checks on the
+        // head SHA.
+        headSha = pullRequest.merge_commit_sha || pullRequest.head.sha
         baseSha = priorSha || pullRequest.base.sha
       } else {
         core.info(`no PR found for ${pullRequestNumber}`)
@@ -59,7 +67,7 @@ const run = async (): Promise<void> => {
 
     core.info(`uploading SBOM for:`)
     core.info(`  repo: https://github.com/${owner}/${repo}`)
-    core.info(`  commit: ${commitSha}`)
+    core.info(`  commit: ${headSha}`)
     core.info(`  base commit: ${baseSha}`)
 
     const result = await uploadSBOM({
@@ -67,7 +75,7 @@ const run = async (): Promise<void> => {
       edgebitToken: edgebitToken,
       sbomPath: sbomPath,
       sourceRepoUrl: `https://github.com/${owner}/${repo}`,
-      sourceCommitId: commitSha,
+      sourceCommitId: headSha,
       baseCommitId: baseSha,
       imageId,
       imageTag,
