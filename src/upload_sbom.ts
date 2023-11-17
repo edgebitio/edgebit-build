@@ -1,7 +1,7 @@
 import * as exec from '@actions/exec'
 import * as tc from '@actions/tool-cache'
 
-const ebctlVersion = 'v0.5.4'
+const ebctlVersion = 'v0.5.5'
 
 export type UploadSBOMParams = {
   sbomPath: string
@@ -14,17 +14,13 @@ export type UploadSBOMParams = {
   baseCommitId?: string
   componentName?: string
   tags: string[]
+  pullRequest?: string
 }
 
-export type UploadSBOMResult = {
-  commentBody: string
-  skipComment: boolean
-}
-
-export async function uploadSBOM(params: UploadSBOMParams): Promise<UploadSBOMResult> {
+export async function uploadSBOM(params: UploadSBOMParams) {
   const ebctl = await getCLI()
 
-  const args = ['upload-sbom-for-ci']
+  const args = ['upload-sbom']
 
   if (params.imageId) {
     args.push('--image-id', params.imageId)
@@ -45,8 +41,8 @@ export async function uploadSBOM(params: UploadSBOMParams): Promise<UploadSBOMRe
   args.push('--repo', params.sourceRepoUrl)
   args.push('--commit', params.sourceCommitId)
 
-  if (params.baseCommitId) {
-    args.push('--base-commit', params.baseCommitId)
+  if (params.pullRequest) {
+    args.push('--pull-request', params.pullRequest)
   }
 
   args.push(params.sbomPath)
@@ -60,13 +56,6 @@ export async function uploadSBOM(params: UploadSBOMParams): Promise<UploadSBOMRe
 
   if (output.exitCode !== 0) {
     throw new Error(`Failed to upload SBOM: ${output.stderr}`)
-  }
-
-  const outputObj = JSON.parse(output.stdout)
-
-  return {
-    commentBody: outputObj['comment_body'],
-    skipComment: outputObj['skip_comment'],
   }
 }
 

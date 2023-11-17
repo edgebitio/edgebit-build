@@ -1,129 +1,6 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 1910:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.minimizeComments = exports.minimizeComment = exports.getComponentComments = exports.createComment = exports.updateComment = exports.getExistingCommentId = void 0;
-const core = __importStar(__nccwpck_require__(2186));
-async function getExistingCommentId(octokit, owner, repo, issueNumber, messageId) {
-    const parameters = {
-        owner,
-        repo,
-        issue_number: issueNumber,
-        per_page: 100,
-    };
-    let found;
-    for await (const comments of octokit.paginate.iterator(octokit.rest.issues.listComments, parameters)) {
-        found = comments.data.find(({ body }) => {
-            var _a;
-            return ((_a = body === null || body === void 0 ? void 0 : body.search(messageId)) !== null && _a !== void 0 ? _a : -1) > -1;
-        });
-        if (found) {
-            break;
-        }
-    }
-    return found === null || found === void 0 ? void 0 : found.id;
-}
-exports.getExistingCommentId = getExistingCommentId;
-async function updateComment(octokit, owner, repo, existingCommentId, body) {
-    const updatedComment = await octokit.rest.issues.updateComment({
-        comment_id: existingCommentId,
-        owner,
-        repo,
-        body,
-    });
-    return updatedComment.data;
-}
-exports.updateComment = updateComment;
-async function createComment(octokit, owner, repo, issueNumber, body) {
-    const createdComment = await octokit.rest.issues.createComment({
-        issue_number: issueNumber,
-        owner,
-        repo,
-        body,
-    });
-    return createdComment.data;
-}
-exports.createComment = createComment;
-async function getComponentComments(octokit, owner, repo, issueNumber, componentName) {
-    const allComments = await octokit.rest.issues.listComments({
-        sort: 'created',
-        issue_number: issueNumber,
-        owner,
-        repo,
-    });
-    core.info(`All comments: ${allComments}`);
-    const matchingComments = allComments.data.filter((comment) => comment.body.includes(`componentName=${componentName}`));
-    core.info(`All Matching comments: ${matchingComments}`);
-    return matchingComments;
-}
-exports.getComponentComments = getComponentComments;
-async function minimizeComment(octokit, nodeID) {
-    const mutation = `
-    mutation minimizeComment($nodeID: ID!) {
-      minimizeComment(input: {subjectId: $nodeID, classifier: OUTDATED}) {
-        clientMutationId
-      }
-    }
-  `;
-    try {
-        await octokit.graphql(mutation, {
-            nodeID: nodeID,
-        });
-        return true;
-    }
-    catch (error) {
-        core.error(`GraphQL error: ${error}`);
-        return false;
-    }
-}
-exports.minimizeComment = minimizeComment;
-async function minimizeComments(octokit, comments) {
-    core.info(`ComponentComments: ${comments}`);
-    for (const currentComment of comments) {
-        if (currentComment) {
-            try {
-                const isCommentMinimized = await minimizeComment(octokit, currentComment.node_id);
-                core.info(`Comment minimized: ${isCommentMinimized}`);
-            }
-            catch (error) {
-                core.error(`Error minimizing comment: ${error}`);
-            }
-        }
-    }
-}
-exports.minimizeComments = minimizeComments;
-
-
-/***/ }),
-
 /***/ 88:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -164,16 +41,6 @@ function getInput(name, overrides, required) {
     }
     return core.getInput(name, { required });
 }
-function parseBool(val, defVal) {
-    switch (val.toLowerCase()) {
-        case 'true':
-            return true;
-        case 'false':
-            return false;
-        default:
-            return defVal;
-    }
-}
 function readOverrides() {
     try {
         const argsFile = core.getInput('args-file', { required: false }) || undefined;
@@ -199,7 +66,6 @@ async function getInputs() {
     const imageTag = getInput('image-tag', args, false) || undefined;
     const componentName = getInput('component', args, false) || undefined;
     const tagsJoined = getInput('tags', args, false) || undefined;
-    const postComment = parseBool(getInput('post-comment', args, false), false);
     let pullRequestNumber = parseInt(getInput('pr-number', args, false)) || undefined;
     if (!edgebitUrl) {
         throw new Error('no EdgeBit URL specified, please specify an EdgeBit URL');
@@ -258,7 +124,6 @@ async function getInputs() {
         imageTag,
         componentName,
         tags,
-        postComment,
     };
 }
 exports.getInputs = getInputs;
@@ -324,13 +189,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
-const comments_1 = __nccwpck_require__(1910);
 const config_1 = __nccwpck_require__(88);
 const issues_1 = __nccwpck_require__(6962);
 const upload_sbom_1 = __nccwpck_require__(6744);
 const run = async () => {
     try {
-        const { edgebitUrl, edgebitToken, repoToken, pullRequestNumber, commitSha, priorSha, owner, repo, sbomPath, imageId, imageTag, componentName, tags, postComment, } = await (0, config_1.getInputs)();
+        const { edgebitUrl, edgebitToken, repoToken, pullRequestNumber, commitSha, priorSha, owner, repo, sbomPath, imageId, imageTag, componentName, tags, } = await (0, config_1.getInputs)();
         const octokit = github.getOctokit(repoToken);
         let headSha = commitSha;
         let baseSha = priorSha;
@@ -374,7 +238,7 @@ const run = async () => {
         core.info(`  repo: https://github.com/${owner}/${repo}`);
         core.info(`  commit: ${headSha}`);
         core.info(`  base commit: ${baseSha}`);
-        const result = await (0, upload_sbom_1.uploadSBOM)({
+        await (0, upload_sbom_1.uploadSBOM)({
             edgebitUrl: edgebitUrl,
             edgebitToken: edgebitToken,
             sbomPath: sbomPath,
@@ -385,39 +249,12 @@ const run = async () => {
             imageTag,
             componentName,
             tags,
+            pullRequest: issueNumber ? `https://github.com/${owner}/${repo}/pull/${issueNumber}` : '',
         });
         if (!issueNumber) {
             core.info('no issue number found, skipping comment creation. This is expected if this is not a pull request.');
             core.setOutput('comment-created', 'false');
             return;
-        }
-        if (postComment) {
-            if (!result.skipComment) {
-                const comment = await (0, comments_1.createComment)(octokit, owner, repo, issueNumber, result.commentBody);
-                if (comment) {
-                    core.setOutput('comment-created', 'true');
-                    core.setOutput('comment-id', comment.id);
-                    if (componentName) {
-                        const componentComments = await (0, comments_1.getComponentComments)(octokit, owner, repo, issueNumber, componentName);
-                        core.info(`ComponentComments: ${componentComments}`);
-                        // Remove the comment with the same ID from componentComments
-                        const filteredComments = componentComments.filter((componentComment) => componentComment.id !== comment.id);
-                        (0, comments_1.minimizeComments)(octokit, filteredComments);
-                    }
-                }
-                else {
-                    core.setOutput('comment-created', 'false');
-                    core.setOutput('comment-updated', 'false');
-                }
-            }
-            else {
-                core.info('skiped commented as skipComment was true.');
-                if (componentName) {
-                    const componentComments = await (0, comments_1.getComponentComments)(octokit, owner, repo, issueNumber, componentName);
-                    core.info(`ComponentComments: ${componentComments}`);
-                    (0, comments_1.minimizeComments)(octokit, componentComments);
-                }
-            }
         }
     }
     catch (err) {
@@ -467,10 +304,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getCLI = exports.uploadSBOM = void 0;
 const exec = __importStar(__nccwpck_require__(1514));
 const tc = __importStar(__nccwpck_require__(7784));
-const ebctlVersion = 'v0.5.4';
+const ebctlVersion = 'v0.5.5';
 async function uploadSBOM(params) {
     const ebctl = await getCLI();
-    const args = ['upload-sbom-for-ci'];
+    const args = ['upload-sbom'];
     if (params.imageId) {
         args.push('--image-id', params.imageId);
     }
@@ -485,8 +322,8 @@ async function uploadSBOM(params) {
     }
     args.push('--repo', params.sourceRepoUrl);
     args.push('--commit', params.sourceCommitId);
-    if (params.baseCommitId) {
-        args.push('--base-commit', params.baseCommitId);
+    if (params.pullRequest) {
+        args.push('--pull-request', params.pullRequest);
     }
     args.push(params.sbomPath);
     const output = await exec.getExecOutput(ebctl, args, {
@@ -498,11 +335,6 @@ async function uploadSBOM(params) {
     if (output.exitCode !== 0) {
         throw new Error(`Failed to upload SBOM: ${output.stderr}`);
     }
-    const outputObj = JSON.parse(output.stdout);
-    return {
-        commentBody: outputObj['comment_body'],
-        skipComment: outputObj['skip_comment'],
-    };
 }
 exports.uploadSBOM = uploadSBOM;
 async function getCLI() {

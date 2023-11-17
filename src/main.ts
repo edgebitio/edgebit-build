@@ -1,6 +1,5 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { createComment, getComponentComments, minimizeComments } from './comments'
 import { getInputs } from './config'
 import { findPRForCommit } from './issues'
 import { uploadSBOM } from './upload_sbom'
@@ -21,7 +20,6 @@ const run = async (): Promise<void> => {
       imageTag,
       componentName,
       tags,
-      postComment,
     } = await getInputs()
 
     const octokit = github.getOctokit(repoToken)
@@ -70,7 +68,7 @@ const run = async (): Promise<void> => {
     core.info(`  commit: ${headSha}`)
     core.info(`  base commit: ${baseSha}`)
 
-    const result = await uploadSBOM({
+    await uploadSBOM({
       edgebitUrl: edgebitUrl,
       edgebitToken: edgebitToken,
       sbomPath: sbomPath,
@@ -81,6 +79,7 @@ const run = async (): Promise<void> => {
       imageTag,
       componentName,
       tags,
+      pullRequest: issueNumber ? `https://github.com/${owner}/${repo}/pull/${issueNumber}` : '',
     })
 
     if (!issueNumber) {
@@ -89,53 +88,6 @@ const run = async (): Promise<void> => {
       )
       core.setOutput('comment-created', 'false')
       return
-    }
-
-    if (postComment) {
-      if (!result.skipComment) {
-        const comment = await createComment(octokit, owner, repo, issueNumber, result.commentBody)
-
-        if (comment) {
-          core.setOutput('comment-created', 'true')
-          core.setOutput('comment-id', comment.id)
-
-          if (componentName) {
-            const componentComments = await getComponentComments(
-              octokit,
-              owner,
-              repo,
-              issueNumber,
-              componentName,
-            )
-            core.info(`ComponentComments: ${componentComments}`)
-
-            // Remove the comment with the same ID from componentComments
-            const filteredComments = componentComments.filter(
-              (componentComment) => componentComment.id !== comment.id,
-            )
-
-            minimizeComments(octokit, filteredComments)
-          }
-        } else {
-          core.setOutput('comment-created', 'false')
-          core.setOutput('comment-updated', 'false')
-        }
-      } else {
-        core.info('skiped commented as skipComment was true.')
-
-        if (componentName) {
-          const componentComments = await getComponentComments(
-            octokit,
-            owner,
-            repo,
-            issueNumber,
-            componentName,
-          )
-          core.info(`ComponentComments: ${componentComments}`)
-
-          minimizeComments(octokit, componentComments)
-        }
-      }
     }
   } catch (err) {
     if (err instanceof Error) {
