@@ -1,6 +1,50 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 2504:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getCLI = void 0;
+const tc = __importStar(__nccwpck_require__(7784));
+const ebctlVersion = 'v0.7.0';
+async function getCLI() {
+    const archVal = process.arch === 'x64' ? 'x86_64' : 'arm64';
+    const toolURL = `https://github.com/edgebitio/edgebit-cli/releases/download/${ebctlVersion}/edgebit-cli_Linux_${archVal}.tar.gz`;
+    const downloaded = await tc.downloadTool(toolURL);
+    const extracted = await tc.extractTar(downloaded);
+    return `${extracted}/ebctl`;
+}
+exports.getCLI = getCLI;
+
+
+/***/ }),
+
 /***/ 88:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -66,7 +110,7 @@ async function getInputs() {
     const imageTag = getInput('image-tag', args, false) || undefined;
     const componentName = getInput('component', args, false) || undefined;
     const tagsJoined = getInput('tags', args, false) || undefined;
-    let pullRequestNumber = parseInt(getInput('pr-number', args, false)) || undefined;
+    const pullRequestNumber = parseInt(getInput('pr-number', args, false)) || undefined;
     if (!edgebitUrl) {
         throw new Error('no EdgeBit URL specified, please specify an EdgeBit URL');
     }
@@ -78,28 +122,6 @@ async function getInputs() {
     const repoFullName = (_a = payload.repository) === null || _a === void 0 ? void 0 : _a.full_name;
     if (!repoFullName) {
         throw new Error('unable to determine repository from request type');
-    }
-    let baseCommit = undefined;
-    const headCommit = github.context.sha;
-    if (pullRequestNumber === undefined) {
-        if (github.context.eventName === 'pull_request') {
-            const pullRequestPayload = github.context.payload;
-            baseCommit = pullRequestPayload.pull_request.base.sha;
-            pullRequestNumber = pullRequestPayload.number;
-            core.info(`pull request event:`);
-            core.info(`  PR #${pullRequestPayload.number}`);
-            core.info(`  base commit: ${baseCommit}`);
-        }
-        else if (github.context.eventName === 'workflow_run') {
-            const workflowPayload = github.context.payload;
-            baseCommit = workflowPayload.head_sha;
-            core.info(`workflow run event:`);
-            core.info(`  base commit: ${baseCommit}`);
-        }
-        else if (github.context.issue.number) {
-            core.info(`not a pull request event, but got issue number: ${github.context.issue.number}`);
-            pullRequestNumber = github.context.issue.number;
-        }
     }
     const [owner, repo] = repoFullName.split('/');
     const tags = tagsJoined === undefined
@@ -114,9 +136,8 @@ async function getInputs() {
         edgebitSource,
         edgebitToken,
         repoToken,
-        pullRequestNumber: pullRequestNumber,
-        commitSha: headCommit,
-        priorSha: baseCommit,
+        commitSha: github.context.sha,
+        pullRequestNumber,
         owner,
         repo,
         sbomPath,
@@ -127,33 +148,6 @@ async function getInputs() {
     };
 }
 exports.getInputs = getInputs;
-
-
-/***/ }),
-
-/***/ 6962:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.findPRForCommit = void 0;
-async function findPRForCommit(octokit, owner, repo, commitSha) {
-    const commitPullsList = await octokit.rest.repos.listPullRequestsAssociatedWithCommit({
-        owner,
-        repo,
-        commit_sha: commitSha,
-    });
-    const prs = commitPullsList.data.filter((pr) => pr.state === 'open');
-    if (prs.length === 0) {
-        return null;
-    }
-    return {
-        number: prs[0].number,
-        base: prs[0].base.sha,
-    };
-}
-exports.findPRForCommit = findPRForCommit;
 
 
 /***/ }),
@@ -190,72 +184,39 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const config_1 = __nccwpck_require__(88);
-const issues_1 = __nccwpck_require__(6962);
 const upload_sbom_1 = __nccwpck_require__(6744);
 const run = async () => {
     try {
-        const { edgebitUrl, edgebitToken, repoToken, pullRequestNumber, commitSha, priorSha, owner, repo, sbomPath, imageId, imageTag, componentName, tags, } = await (0, config_1.getInputs)();
-        const octokit = github.getOctokit(repoToken);
-        let headSha = commitSha;
-        let baseSha = priorSha;
-        let issueNumber;
-        if (pullRequestNumber) {
-            core.info(`pull request number specified: ${pullRequestNumber}`);
-            issueNumber = pullRequestNumber;
-            const { data: pullRequest } = await octokit.rest.pulls.get({
-                owner,
-                repo,
-                pull_number: pullRequestNumber,
-            });
-            if (pullRequest) {
-                core.info(`found PR #${pullRequestNumber}`);
-                // If the PR is open, merge_commit_sha contains the SHA of the
-                // "test commit" that was checked out and the SBOM build against.
-                // If the PR is merged, merge_commit_sha will contain the actual
-                // merge commit. As such, it should be preferred over head.sha.
-                // The GH app has logic to detect open PRs and add checks on the
-                // head SHA.
-                headSha = pullRequest.merge_commit_sha || pullRequest.head.sha;
-                baseSha = priorSha || pullRequest.base.sha;
-            }
-            else {
-                core.info(`no PR found for ${pullRequestNumber}`);
+        const { edgebitUrl, edgebitToken, commitSha, pullRequestNumber, owner, repo, sbomPath, imageId, imageTag, componentName, tags, } = await (0, config_1.getInputs)();
+        let prNumber;
+        if (pullRequestNumber === undefined) {
+            if (github.context.eventName === 'pull_request') {
+                core.info(`pull request event detected`);
+                const pullRequestPayload = github.context.payload;
+                prNumber = pullRequestPayload.number;
             }
         }
         else {
-            core.info(`attempting to locate PR for commit ${commitSha}...`);
-            const pr = await (0, issues_1.findPRForCommit)(octokit, owner, repo, commitSha);
-            if (pr) {
-                core.info(`found PR #${pr.number} for commit ${commitSha}`);
-                issueNumber = pr.number;
-                baseSha = priorSha || pr.base;
-            }
-            else {
-                core.info(`no PR found for commit ${commitSha}`);
-            }
+            core.info(`pull request number specified: ${pullRequestNumber}`);
+            prNumber = pullRequestNumber;
         }
         core.info(`uploading SBOM for:`);
         core.info(`  repo: https://github.com/${owner}/${repo}`);
-        core.info(`  commit: ${headSha}`);
-        core.info(`  base commit: ${baseSha}`);
+        core.info(`  commit: ${commitSha}`);
+        core.info(`  pull request: ${prNumber}`);
         await (0, upload_sbom_1.uploadSBOM)({
             edgebitUrl: edgebitUrl,
             edgebitToken: edgebitToken,
             sbomPath: sbomPath,
             sourceRepoUrl: `https://github.com/${owner}/${repo}`,
-            sourceCommitId: headSha,
-            baseCommitId: baseSha,
+            sourceCommitId: commitSha,
+            baseCommitId: undefined,
             imageId,
             imageTag,
             componentName,
             tags,
-            pullRequest: issueNumber ? `https://github.com/${owner}/${repo}/pull/${issueNumber}` : '',
+            pullRequest: prNumber ? `https://github.com/${owner}/${repo}/pull/${prNumber}` : '',
         });
-        if (!issueNumber) {
-            core.info('no issue number found, skipping comment creation. This is expected if this is not a pull request.');
-            core.setOutput('comment-created', 'false');
-            return;
-        }
     }
     catch (err) {
         if (err instanceof Error) {
@@ -301,12 +262,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getCLI = exports.uploadSBOM = void 0;
+exports.uploadSBOM = void 0;
 const exec = __importStar(__nccwpck_require__(1514));
-const tc = __importStar(__nccwpck_require__(7784));
-const ebctlVersion = 'v0.7.0';
+const cli_1 = __nccwpck_require__(2504);
 async function uploadSBOM(params) {
-    const ebctl = await getCLI();
+    const ebctl = await (0, cli_1.getCLI)();
     const args = ['upload-sbom'];
     if (params.imageId) {
         args.push('--image-id', params.imageId);
@@ -337,14 +297,6 @@ async function uploadSBOM(params) {
     }
 }
 exports.uploadSBOM = uploadSBOM;
-async function getCLI() {
-    const archVal = process.arch === 'x64' ? 'x86_64' : 'arm64';
-    const toolURL = `https://github.com/edgebitio/edgebit-cli/releases/download/${ebctlVersion}/edgebit-cli_Linux_${archVal}.tar.gz`;
-    const downloaded = await tc.downloadTool(toolURL);
-    const extracted = await tc.extractTar(downloaded);
-    return `${extracted}/ebctl`;
-}
-exports.getCLI = getCLI;
 
 
 /***/ }),
