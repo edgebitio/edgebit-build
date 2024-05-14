@@ -108,6 +108,7 @@ async function getInputs() {
     const repoToken = getInput('repo-token', args, true);
     const imageId = getInput('image-id', args, false) || undefined;
     const imageTag = getInput('image-tag', args, false) || undefined;
+    const repoDigestsJoined = getInput('repo-digest', args, false) || undefined;
     const componentName = getInput('component', args, false) || undefined;
     const tagsJoined = getInput('tags', args, false) || undefined;
     const commitSha = getInput('commit-sha', args, false) || github.context.sha;
@@ -125,6 +126,12 @@ async function getInputs() {
         throw new Error('unable to determine repository from request type');
     }
     const [owner, repo] = repoFullName.split('/');
+    const repoDigests = repoDigestsJoined === undefined
+        ? []
+        : repoDigestsJoined
+            .split(',')
+            .map((d) => d.trim())
+            .filter((d) => d.length > 0);
     const tags = tagsJoined === undefined
         ? []
         : tagsJoined
@@ -144,6 +151,7 @@ async function getInputs() {
         sbomPath,
         imageId,
         imageTag,
+        repoDigests,
         componentName,
         tags,
     };
@@ -188,7 +196,7 @@ const config_1 = __nccwpck_require__(88);
 const upload_sbom_1 = __nccwpck_require__(6744);
 const run = async () => {
     try {
-        const { edgebitUrl, edgebitToken, commitSha, pullRequestNumber, owner, repo, sbomPath, imageId, imageTag, componentName, tags, } = await (0, config_1.getInputs)();
+        const { edgebitUrl, edgebitToken, commitSha, pullRequestNumber, owner, repo, sbomPath, imageId, imageTag, repoDigests, componentName, tags, } = await (0, config_1.getInputs)();
         let prNumber;
         if (pullRequestNumber === undefined) {
             if (github.context.eventName === 'pull_request') {
@@ -214,6 +222,7 @@ const run = async () => {
             baseCommitId: undefined,
             imageId,
             imageTag,
+            repoDigests,
             componentName,
             tags,
             pullRequest: prNumber ? `https://github.com/${owner}/${repo}/pull/${prNumber}` : '',
@@ -274,6 +283,9 @@ async function uploadSBOM(params) {
     }
     if (params.imageTag) {
         args.push('--image-tag', params.imageTag);
+    }
+    for (const digest of params.repoDigests) {
+        args.push('--repo-digest', digest);
     }
     if (params.componentName) {
         args.push('--component', params.componentName);

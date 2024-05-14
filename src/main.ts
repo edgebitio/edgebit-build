@@ -16,6 +16,7 @@ const run = async (): Promise<void> => {
       sbomPath,
       imageId,
       imageTag,
+      repoDigests,
       componentName,
       tags,
     } = await getInputs()
@@ -48,6 +49,7 @@ const run = async (): Promise<void> => {
       baseCommitId: undefined,
       imageId,
       imageTag,
+      repoDigests,
       componentName,
       tags,
       pullRequest: prNumber ? `https://github.com/${owner}/${repo}/pull/${prNumber}` : '',

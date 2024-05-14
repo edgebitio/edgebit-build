@@ -1,21 +1,20 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import * as exec from '@actions/exec'
-import { PullRequestOpenedEvent } from '@octokit/webhooks-definitions/schema'
+import { PullRequestEvent, PullRequestOpenedEvent } from '@octokit/webhooks-definitions/schema'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import run from '../src/main'
 import * as cli from '../src/cli'
 
 const repoFullName = 'foo/bar'
-const repoToken = '12345'
 const commitSha = 'abc123'
-const simpleMessage = 'hello world'
 
 type Inputs = {
   'repo-token': string
   'edgebit-url': string
   'token': string
   'sbom-file': string
+  'repo-digest': string
 }
 
 const inputs: Inputs = {
@@ -23,6 +22,45 @@ const inputs: Inputs = {
   'token': 'test-token',
   'repo-token': '',
   'sbom-file': 'sbom.spdx.json',
+  'repo-digest': 'foo/bar@sha256:12345, foo/bar@sha256:67890',
+}
+
+function expectedArgs() {
+  let args = [
+      'upload-sbom',
+      '--repo-digest',
+      'foo/bar@sha256:12345',
+      '--repo-digest',
+      'foo/bar@sha256:67890',
+      '--repo',
+      'https://github.com/foo/bar',
+      '--commit',
+      inputs['commit-sha'] || 'abc123',
+  ];
+
+  let prNumber = inputs['pr-number']
+  if (prNumber === undefined) {
+    if (github.context.eventName === 'pull_request') {
+      const pullRequestPayload = github.context.payload as PullRequestEvent
+      prNumber = pullRequestPayload.number
+    }
+  }
+
+  if (prNumber) {
+    args.push('--pull-request', `https://github.com/foo/bar/pull/${prNumber}`)
+  }
+
+  args.push('sbom.spdx.json')
+  return args
+}
+
+function expectedEnv() {
+  return {
+    env: {
+      EDGEBIT_URL: 'https://test.edgebit.io',
+      EDGEBIT_API_KEY: 'test-token'
+    }
+  };
 }
 
 let issueNumber = 1
@@ -85,21 +123,11 @@ describe('upload-sbom action', () => {
 
     await expect(run()).resolves.not.toThrow()
     expect(core.setFailed).not.toHaveBeenCalled()
-    expect(exec.getExecOutput).toHaveBeenCalledWith('ebctl', [
-      'upload-sbom',
-      '--repo',
-      'https://github.com/foo/bar',
-      '--commit',
-      'abc123',
-      '--pull-request',
-      'https://github.com/foo/bar/pull/1',
-      'sbom.spdx.json'
-    ], {
-      env: {
-        EDGEBIT_URL: 'https://test.edgebit.io',
-        EDGEBIT_API_KEY: 'test-token'
-      }
-    })
+    expect(exec.getExecOutput).toHaveBeenCalledWith(
+      'ebctl',
+      expectedArgs(),
+      expectedEnv(),
+    )
   })
 
   it('uploads an SBOM from pull request number specified', async () => {
@@ -108,21 +136,11 @@ describe('upload-sbom action', () => {
     
     await expect(run()).resolves.not.toThrow()
     expect(core.setFailed).not.toHaveBeenCalled()
-    expect(exec.getExecOutput).toHaveBeenCalledWith('ebctl', [
-      'upload-sbom',
-      '--repo',
-      'https://github.com/foo/bar',
-      '--commit',
-      'abc123',
-      '--pull-request',
-      'https://github.com/foo/bar/pull/2',
-      'sbom.spdx.json'
-    ], {
-      env: {
-        EDGEBIT_URL: 'https://test.edgebit.io',
-        EDGEBIT_API_KEY: 'test-token'
-      }
-    })
+    expect(exec.getExecOutput).toHaveBeenCalledWith(
+      'ebctl',
+      expectedArgs(),
+      expectedEnv(),
+    )
   })
 
   it('uploads an SBOM from push', async () => {
@@ -130,19 +148,11 @@ describe('upload-sbom action', () => {
 
     await expect(run()).resolves.not.toThrow()
     expect(core.setFailed).not.toHaveBeenCalled()
-    expect(exec.getExecOutput).toHaveBeenCalledWith('ebctl', [
-      'upload-sbom',
-      '--repo',
-      'https://github.com/foo/bar',
-      '--commit',
-      'abc123',
-      'sbom.spdx.json'
-    ], {
-      env: {
-        EDGEBIT_URL: 'https://test.edgebit.io',
-        EDGEBIT_API_KEY: 'test-token'
-      }
-    })
+    expect(exec.getExecOutput).toHaveBeenCalledWith(
+      'ebctl',
+      expectedArgs(),
+      expectedEnv(),
+    )
   })
 
   it('uploads an SBOM with explicit commit-sha', async () => {
@@ -151,18 +161,10 @@ describe('upload-sbom action', () => {
 
     await expect(run()).resolves.not.toThrow()
     expect(core.setFailed).not.toHaveBeenCalled()
-    expect(exec.getExecOutput).toHaveBeenCalledWith('ebctl', [
-      'upload-sbom',
-      '--repo',
-      'https://github.com/foo/bar',
-      '--commit',
-      'bca321',
-      'sbom.spdx.json'
-    ], {
-      env: {
-        EDGEBIT_URL: 'https://test.edgebit.io',
-        EDGEBIT_API_KEY: 'test-token'
-      }
-    })
+    expect(exec.getExecOutput).toHaveBeenCalledWith(
+      'ebctl',
+      expectedArgs(),
+      expectedEnv(),
+    )
   })
 })
