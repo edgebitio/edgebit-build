@@ -30,6 +30,9 @@ inputs:
   tags:
     description: 'Comma-separated list of Component tags to apply to the SBOM'
     required: false
+  commit-sha:
+    description: 'Commit SHA to associate with the SBOM.'
+    required: false
   pr-number:
     description: 'Pull Request number on which to comment'
     required: false

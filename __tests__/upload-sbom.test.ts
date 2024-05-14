@@ -60,6 +60,7 @@ describe('upload-sbom action', () => {
   afterEach(() => {
     vi.clearAllMocks()
     delete inputs['pr-number']
+    delete inputs['commit-sha']
     github.context.eventName = ''
   })
 
@@ -135,6 +136,27 @@ describe('upload-sbom action', () => {
       'https://github.com/foo/bar',
       '--commit',
       'abc123',
+      'sbom.spdx.json'
+    ], {
+      env: {
+        EDGEBIT_URL: 'https://test.edgebit.io',
+        EDGEBIT_API_KEY: 'test-token'
+      }
+    })
+  })
+
+  it('uploads an SBOM with explicit commit-sha', async () => {
+    github.context.eventName = 'push'
+    inputs['commit-sha'] = 'bca321'
+
+    await expect(run()).resolves.not.toThrow()
+    expect(core.setFailed).not.toHaveBeenCalled()
+    expect(exec.getExecOutput).toHaveBeenCalledWith('ebctl', [
+      'upload-sbom',
+      '--repo',
+      'https://github.com/foo/bar',
+      '--commit',
+      'bca321',
       'sbom.spdx.json'
     ], {
       env: {
