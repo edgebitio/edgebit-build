@@ -32,7 +32,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getCLI = void 0;
 const tc = __importStar(__nccwpck_require__(7784));
-const ebctlVersion = 'v0.7.0';
+const ebctlVersion = 'v0.8.0';
 async function getCLI() {
     const archVal = process.arch === 'x64' ? 'x86_64' : 'arm64';
     const toolURL = `https://github.com/edgebitio/edgebit-cli/releases/download/${ebctlVersion}/edgebit-cli_Linux_${archVal}.tar.gz`;
