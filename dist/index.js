@@ -110,6 +110,7 @@ async function getInputs() {
     const imageTag = getInput('image-tag', args, false) || undefined;
     const componentName = getInput('component', args, false) || undefined;
     const tagsJoined = getInput('tags', args, false) || undefined;
+    const commitSha = getInput('commit-sha', args, false) || github.context.sha;
     const pullRequestNumber = parseInt(getInput('pr-number', args, false)) || undefined;
     if (!edgebitUrl) {
         throw new Error('no EdgeBit URL specified, please specify an EdgeBit URL');
@@ -136,7 +137,7 @@ async function getInputs() {
         edgebitSource,
         edgebitToken,
         repoToken,
-        commitSha: github.context.sha,
+        commitSha,
         pullRequestNumber,
         owner,
         repo,
