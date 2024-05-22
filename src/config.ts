@@ -15,6 +15,7 @@ interface Inputs {
   sbomPath: string
   imageId: string | undefined
   imageTag: string | undefined
+  repoDigests: string[]
   componentName?: string
   tags: string[]
 }
@@ -52,6 +53,7 @@ export async function getInputs(): Promise<Inputs> {
   const repoToken = getInput('repo-token', args, true)
   const imageId = getInput('image-id', args, false) || undefined
   const imageTag = getInput('image-tag', args, false) || undefined
+  const repoDigestsJoined = getInput('repo-digest', args, false) || undefined
   const componentName = getInput('component', args, false) || undefined
   const tagsJoined = getInput('tags', args, false) || undefined
   const commitSha = getInput('commit-sha', args, false) || github.context.sha
@@ -78,6 +80,14 @@ export async function getInputs(): Promise<Inputs> {
 
   const [owner, repo] = repoFullName.split('/')
 
+  const repoDigests =
+    repoDigestsJoined === undefined
+      ? []
+      : repoDigestsJoined
+          .split(',')
+          .map((d) => d.trim())
+          .filter((d) => d.length > 0)
+
   const tags =
     tagsJoined === undefined
       ? []
@@ -99,6 +109,7 @@ export async function getInputs(): Promise<Inputs> {
     sbomPath,
     imageId,
     imageTag,
+    repoDigests,
     componentName,
     tags,
   }

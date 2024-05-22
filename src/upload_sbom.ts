@@ -7,6 +7,7 @@ export type UploadSBOMParams = {
   edgebitToken: string
   imageId?: string
   imageTag?: string
+  repoDigests: string[]
   sourceRepoUrl: string
   sourceCommitId: string
   baseCommitId?: string
@@ -26,6 +27,10 @@ export async function uploadSBOM(params: UploadSBOMParams) {
 
   if (params.imageTag) {
     args.push('--image-tag', params.imageTag)
+  }
+
+  for (const digest of params.repoDigests) {
+    args.push('--repo-digest', digest)
   }
 
   if (params.componentName) {
