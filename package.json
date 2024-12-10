@@ -137,6 +137,7 @@
     "micromatch": "^4.0.8",
     "rollup": "^4.24.0",
     "@types/estree": "^1.0.6",
-    "@rollup/rollup-linux-arm64-musl": "^4.24.0"
+    "@rollup/rollup-linux-arm64-musl": "^4.24.0",
+    "cross-spawn": "^7.0.6"
   }
 }
