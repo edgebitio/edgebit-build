@@ -20,7 +20,7 @@
   "author": "EdgeBit, Inc.",
   "main": "lib/main.js",
   "scripts": {
-    "build": "tsc",
+    "build": "npm i && tsc",
     "clean": "rm -rf node_modules dist package-lock.json __tests__/runner/**/*",
     "lint": "eslint src/**/*.ts",
     "package": "ncc build --source-map",
