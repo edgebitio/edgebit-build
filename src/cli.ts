@@ -1,6 +1,6 @@
 import * as tc from '@actions/tool-cache'
 
-const ebctlVersion = 'v0.8.0'
+const ebctlVersion = 'v0.9.0'
 
 export async function getCLI(): Promise<string> {
   const archVal = process.arch === 'x64' ? 'x86_64' : 'arm64'

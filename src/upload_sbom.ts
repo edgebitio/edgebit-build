@@ -11,7 +11,7 @@ export type UploadSBOMParams = {
   sourceRepoUrl: string
   sourceCommitId: string
   baseCommitId?: string
-  componentName?: string
+  componentName: string
   tags: string[]
   pullRequest?: string
 }
@@ -33,9 +33,7 @@ export async function uploadSBOM(params: UploadSBOMParams) {
     args.push('--repo-digest', digest)
   }
 
-  if (params.componentName) {
-    args.push('--component', params.componentName)
-  }
+  args.push('--component', params.componentName)
 
   for (const tag of params.tags) {
     args.push('--tag', tag)

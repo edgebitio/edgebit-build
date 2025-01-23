@@ -32,7 +32,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getCLI = void 0;
 const tc = __importStar(__nccwpck_require__(7784));
-const ebctlVersion = 'v0.8.0';
+const ebctlVersion = 'v0.9.0';
 async function getCLI() {
     const archVal = process.arch === 'x64' ? 'x86_64' : 'arm64';
     const toolURL = `https://github.com/edgebitio/edgebit-cli/releases/download/${ebctlVersion}/edgebit-cli_Linux_${archVal}.tar.gz`;
@@ -109,12 +109,15 @@ async function getInputs() {
     const imageId = getInput('image-id', args, false) || undefined;
     const imageTag = getInput('image-tag', args, false) || undefined;
     const repoDigestsJoined = getInput('repo-digest', args, false) || undefined;
-    const componentName = getInput('component', args, false) || undefined;
+    const componentName = getInput('component', args, true);
     const tagsJoined = getInput('tags', args, false) || undefined;
     const commitSha = getInput('commit-sha', args, false) || github.context.sha;
     const pullRequestNumber = parseInt(getInput('pr-number', args, false)) || undefined;
     if (!edgebitUrl) {
         throw new Error('no EdgeBit URL specified, please specify an EdgeBit URL');
+    }
+    if (!componentName) {
+        throw new Error('no component name specified, please specify a component name');
     }
     const sbomPath = core.getInput('sbom-file', { required: false }) || process.env.ANCHORE_SBOM_ACTION_SBOM_FILE;
     if (!sbomPath) {
@@ -287,9 +290,7 @@ async function uploadSBOM(params) {
     for (const digest of params.repoDigests) {
         args.push('--repo-digest', digest);
     }
-    if (params.componentName) {
-        args.push('--component', params.componentName);
-    }
+    args.push('--component', params.componentName);
     for (const tag of params.tags) {
         args.push('--tag', tag);
     }

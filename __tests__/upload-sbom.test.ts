@@ -15,6 +15,7 @@ type Inputs = {
   'token': string
   'sbom-file': string
   'repo-digest': string
+  'component': string
 }
 
 const inputs: Inputs = {
@@ -23,6 +24,7 @@ const inputs: Inputs = {
   'repo-token': '',
   'sbom-file': 'sbom.spdx.json',
   'repo-digest': 'foo/bar@sha256:12345, foo/bar@sha256:67890',
+  'component': 'foo/bar',
 }
 
 function expectedArgs() {
@@ -32,6 +34,8 @@ function expectedArgs() {
       'foo/bar@sha256:12345',
       '--repo-digest',
       'foo/bar@sha256:67890',
+      '--component',
+      'foo/bar',
       '--repo',
       'https://github.com/foo/bar',
       '--commit',
