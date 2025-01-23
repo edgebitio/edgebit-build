@@ -16,7 +16,7 @@ interface Inputs {
   imageId: string | undefined
   imageTag: string | undefined
   repoDigests: string[]
-  componentName?: string
+  componentName: string
   tags: string[]
 }
 
@@ -54,13 +54,17 @@ export async function getInputs(): Promise<Inputs> {
   const imageId = getInput('image-id', args, false) || undefined
   const imageTag = getInput('image-tag', args, false) || undefined
   const repoDigestsJoined = getInput('repo-digest', args, false) || undefined
-  const componentName = getInput('component', args, false) || undefined
+  const componentName = getInput('component', args, true)
   const tagsJoined = getInput('tags', args, false) || undefined
   const commitSha = getInput('commit-sha', args, false) || github.context.sha
   const pullRequestNumber = parseInt(getInput('pr-number', args, false)) || undefined
 
   if (!edgebitUrl) {
     throw new Error('no EdgeBit URL specified, please specify an EdgeBit URL')
+  }
+
+  if (!componentName) {
+    throw new Error('no component name specified, please specify a component name')
   }
 
   const sbomPath =

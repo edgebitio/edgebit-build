@@ -29,7 +29,7 @@ inputs:
     required: false
   component:
     description: 'EdgeBit Component name to associate the SBOM with'
-    required: false
+    required: true
   tags:
     description: 'Comma-separated list of Component tags to apply to the SBOM'
     required: false

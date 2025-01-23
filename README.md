@@ -13,7 +13,7 @@ Less noise equals less frustration between security and engineering teams. And f
 | `edgebit-url` | EdgeBit organization url | Required<br/>`https://foo.edgebit.io` |
 | `token` | EdgeBit access token | Required<br/>`${{ secrets.EDGEBIT_TOKEN }}`|
 | `sbom-file` | Location of the SBOM on disk | Required<br/>`/tmp/sbom.syft.json` |
-| `component` | Name of the component, like a frontend or backend. A new component will be created automatically if it doesn't exist. | Optional<br/>`my-frontend` |
+| `component` | Name of the component, like a frontend or backend. A new component will be created automatically if it doesn't exist. | Required<br/>`my-frontend` |
 | `tags` | Identifiers to organize a single SBOM in a stream of SBOMs. Conceptually similar to container tags. | Optional<br/>`'latest', 'v1.2.3'` |
 | `repo-token` | GitHub API token used to post comments on PRs | Optional<br/>`${{ secrets.GITHUB_TOKEN }}` |
 | `image-tag` | The tag of the container image | Optional<br/>Taken from the build step |
