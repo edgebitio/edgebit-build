@@ -164,6 +164,9 @@
     "@esbuild/win32-ia32": "^0.25.0",
     "@esbuild/win32-x64": "^0.25.0",
     "@esbuild/android-arm": "^0.25.0",
-    "@esbuild/linux-loong64": "^0.25.0"
+    "@esbuild/linux-loong64": "^0.25.0",
+    "@octokit/request": "^9.2.2",
+    "fast-content-type-parse": "^2.0.1",
+    "@octokit/endpoint": "^10.1.3"
   }
 }
