@@ -164,6 +164,7 @@
     "@esbuild/win32-ia32": "^0.25.0",
     "@esbuild/win32-x64": "^0.25.0",
     "@esbuild/android-arm": "^0.25.0",
-    "@esbuild/linux-loong64": "^0.25.0"
+    "@esbuild/linux-loong64": "^0.25.0",
+    "@octokit/plugin-paginate-rest": "^11.4.2"
   }
 }
