@@ -101,9 +101,9 @@
     "dist"
   ],
   "dependencies": {
-    "@actions/core": "^1.10.0",
+    "@actions/core": "^1.11.1",
     "@actions/exec": "^1.1.1",
-    "@actions/github": "^5.1.1",
+    "@actions/github": "^6.0.0",
     "@actions/http-client": "^2.0.1",
     "@actions/io": "^1.1.2",
     "@actions/tool-cache": "^2.0.1",
@@ -165,10 +165,6 @@
     "@esbuild/win32-x64": "^0.25.0",
     "@esbuild/android-arm": "^0.25.0",
     "@esbuild/linux-loong64": "^0.25.0",
-    "@octokit/request": "^9.2.2",
-    "fast-content-type-parse": "^2.0.1",
-    "@octokit/endpoint": "^10.1.3",
-    "@octokit/request-error": "^5.1.1",
-    "@octokit/plugin-paginate-rest": "^9.2.2"
+    "fast-content-type-parse": "^2.0.1"
   }
 }
