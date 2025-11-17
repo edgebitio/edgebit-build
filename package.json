@@ -166,6 +166,20 @@
     "@esbuild/android-arm": "^0.25.0",
     "@esbuild/linux-loong64": "^0.25.0",
     "fast-content-type-parse": "^2.0.1",
-    "@babel/runtime": "^7.26.10"
+    "@babel/runtime": "^7.26.10",
+    "glob": "^11.1.0",
+    "fs.realpath": "^1.0.0",
+    "inflight": "^1.0.6",
+    "jackspeak": "^4.1.1",
+    "strip-ansi": "^7.1.2",
+    "ansi-regex": "^6.2.2",
+    "ansi-styles": "^6.2.3",
+    "minimatch": "^10.1.1",
+    "@isaacs/brace-expansion": "^5.0.0",
+    "@isaacs/balanced-match": "^4.0.1",
+    "path-is-absolute": "^1.0.1",
+    "path-scurry": "^2.0.1",
+    "lru-cache": "^11.2.2",
+    "@pkgjs/parseargs": "^0.11.0"
   }
 }
