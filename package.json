@@ -166,6 +166,8 @@
     "@esbuild/android-arm": "^0.25.0",
     "@esbuild/linux-loong64": "^0.25.0",
     "fast-content-type-parse": "^2.0.1",
-    "@babel/runtime": "^7.26.10"
+    "@babel/runtime": "^7.26.10",
+    "undici": "^6.23.0",
+    "@fastify/busboy": "^2.1.1"
   }
 }
